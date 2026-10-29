@@ -1,0 +1,2730 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Учёт коммунальных услуг</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#155A5F">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+  :root{
+    --fs:1;
+    --input-bg:#FFFFFF;
+    --nav-bg:#FFFFFF;
+    --rem-bg:#FBF3E3;
+    --rem-line:#F0DDB0;
+    --bar-bg:#AFCAC8;
+    --placeholder:#B8C4C3;
+    --toast-bg:#16323A;
+    --bg:#F3F6F5;
+    --surface:#FFFFFF;
+    --ink:#16323A;
+    --muted:#63797F;
+    --line:#E1E8E7;
+    --primary:#155A5F;
+    --primary-ink:#0E4145;
+    --primary-soft:#E2EFEE;
+    --accent:#E2963A;
+    --accent-ink:#8A5416;
+    --gas:#D9643A;
+    --electro:#E4B23D;
+    --water:#3D86D8;
+    --rent:#7C6FC9;
+    --delivery:#3DA88A;
+    --danger:#C6484B;
+    --danger-soft:#FBE9E9;
+    --radius:14px;
+    --radius-sm:10px;
+    font-variant-numeric: tabular-nums;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    -webkit-tap-highlight-color:transparent;
+    padding-bottom:76px;
+  }
+  .app{max-width:480px;margin:0 auto;min-height:100vh;background:var(--bg);position:relative;}
+  header.topbar{
+    position:sticky;top:0;z-index:20;
+    background:var(--primary);
+    color:#fff;
+    padding:14px 16px 12px;
+  }
+  header.topbar .brand{display:flex;align-items:center;gap:8px;font-size:calc(13px * var(--fs));opacity:.85;letter-spacing:.02em;}
+  header.topbar h1{margin:2px 0 0;font-size:calc(20px * var(--fs));font-weight:700;letter-spacing:-0.01em;}
+  main{padding:14px 14px 24px;}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  .card{
+    background:var(--surface);
+    border-radius:var(--radius);
+    padding:14px 14px;
+    margin-bottom:12px;
+    border:1px solid var(--line);
+  }
+  .card h2{
+    font-size:calc(13px * var(--fs));text-transform:uppercase;letter-spacing:.06em;
+    color:var(--muted);margin:0 0 10px;font-weight:700;
+  }
+  .reminder-card{
+    background:var(--rem-bg);border-color:var(--rem-line);padding:10px 14px;
+  }
+  .reminder-card #reminderList{font-size:calc(12.5px * var(--fs));color:var(--accent-ink);line-height:1.6;}
+  .reminder-card .rline{display:flex;gap:6px;align-items:flex-start;}
+  .reminder-card .rline .dot{flex:none;margin-top:1px;}
+  .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .collapse-block{margin-top:10px;}
+  .collapse-block summary{
+    font-size:calc(12.5px * var(--fs));font-weight:700;color:var(--primary-ink);cursor:pointer;
+    list-style:none;padding:8px 2px;border-top:1px dashed var(--line);
+  }
+  .collapse-block summary::-webkit-details-marker{display:none;}
+  .collapse-block summary::before{content:"▸ ";display:inline-block;transition:transform .15s;}
+  .collapse-block[open] summary::before{transform:rotate(90deg);}
+  .kpi{
+    background:var(--primary-soft);border-radius:var(--radius-sm);
+    padding:10px 12px;
+  }
+  .kpi .label{font-size:calc(11px * var(--fs));color:var(--primary-ink);opacity:.8;margin-bottom:2px;}
+  .kpi .value{font-size:calc(19px * var(--fs));font-weight:700;color:var(--primary-ink);}
+
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:calc(12px * var(--fs));color:var(--muted);margin-bottom:4px;font-weight:600;}
+  .field input, .field select, .field textarea{
+    width:100%;font-size:calc(16px * var(--fs));padding:11px 12px;border-radius:var(--radius-sm);
+    border:1px solid var(--line);background:var(--input-bg);color:var(--ink);
+    font-family:inherit;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{
+    outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft);
+  }
+  .hint{font-size:calc(11.5px * var(--fs));color:var(--muted);margin-top:3px;}
+  .hint.hint-warn{color:var(--danger);font-weight:700;}
+  .hint.hint-auto{color:var(--accent-ink);}
+  .field-label-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;}
+  .field-label-row label{margin-bottom:0;}
+  .prev-badge{font-size:calc(11px * var(--fs));color:var(--muted);background:var(--bg);border-radius:6px;padding:2px 7px;white-space:nowrap;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+  .service-block{border-left:3px solid var(--line);padding-left:10px;margin-bottom:14px;}
+  .service-block.gas{border-color:var(--gas);}
+  .service-block.electro{border-color:var(--electro);}
+  .service-block.water{border-color:var(--water);}
+  .service-block.rent{border-color:var(--rent);}
+  .service-block .stitle{font-weight:700;font-size:calc(14px * var(--fs));margin-bottom:8px;}
+  .service-block .stitle-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+  .service-block .stitle-row .stitle{margin-bottom:0;}
+  .service-block .stitle-links{display:flex;gap:6px;flex-wrap:wrap;}
+  .link-chip{
+    font-size:calc(10.5px * var(--fs));font-weight:700;background:var(--primary-soft);color:var(--primary-ink);
+    padding:4px 9px;border-radius:999px;text-decoration:none;white-space:nowrap;
+  }
+  .link-chip:active{background:var(--primary);color:#fff;}
+
+  button{
+    font-family:inherit;cursor:pointer;border:none;
+  }
+  .btn-primary{
+    width:100%;background:var(--primary);color:#fff;font-size:calc(15px * var(--fs));font-weight:700;
+    padding:13px;border-radius:var(--radius-sm);margin-top:4px;
+  }
+  .btn-primary:active{background:var(--primary-ink);}
+  .btn-secondary{
+    background:var(--primary-soft);color:var(--primary-ink);font-size:calc(13px * var(--fs));font-weight:600;
+    padding:9px 12px;border-radius:var(--radius-sm);
+  }
+  .btn-danger-text{background:none;color:var(--danger);font-size:calc(13px * var(--fs));font-weight:600;padding:6px 4px;}
+
+  .total-row{
+    display:flex;justify-content:space-between;align-items:baseline;
+    padding:10px 2px 2px;font-weight:700;font-size:calc(16px * var(--fs));border-top:1px dashed var(--line);margin-top:4px;
+  }
+  .total-row span.v{color:var(--primary-ink);}
+
+  .month-list{margin-top:4px;}
+  .month-row{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:10px 4px;border-bottom:1px solid var(--line);font-size:calc(14px * var(--fs));
+  }
+  .month-row:last-child{border-bottom:none;}
+  .month-row .m{font-weight:600;}
+  .month-row .a{color:var(--muted);}
+  .month-row.empty .a{color:var(--placeholder);font-style:italic;}
+
+  .bar-list .bar-item{margin-bottom:10px;}
+  .bar-list .bar-item .bl-top{display:flex;justify-content:space-between;font-size:calc(13px * var(--fs));margin-bottom:4px;}
+  .bar-list .bar-item .bl-right{display:flex;align-items:baseline;gap:14px;}
+  .bar-list .bar-item .bl-qty{color:var(--muted);font-weight:600;font-size:calc(11.5px * var(--fs));}
+  .bar-list .bar-item .bl-cost{font-weight:700;}
+  .bar-list .bar-item .bl-track{background:var(--bg);border-radius:6px;height:10px;overflow:hidden;}
+  .bar-list .bar-item .bl-fill{height:100%;border-radius:6px;}
+
+  .yearchart{display:flex;gap:6px;}
+  .yaxis{display:flex;flex-direction:column;justify-content:space-between;height:110px;margin-top:28px;font-size:calc(10px * var(--fs));font-weight:700;color:var(--muted);text-align:right;flex:none;width:26px;}
+  .ybars-wrap{flex:1;min-width:0;overflow-x:auto;}
+  .yearbars{display:flex;align-items:flex-end;gap:3px;height:110px;margin-top:28px;border-bottom:1px solid var(--line);}
+  .yearbars .yb-slot{flex:1 0 22px;width:22px;display:flex;align-items:flex-end;gap:2px;height:100%;min-width:22px;position:relative;}
+  .yearbars .yb{flex:1;background:var(--bar-bg);border-radius:3px 3px 0 0;position:relative;min-height:2px;}
+  .yearbars .yb.cur{background:var(--primary);}
+  .yearbars .yb.series-a{background:var(--primary);}
+  .yearbars .yb.series-b{background:var(--accent);}
+  .yearbars .yb .ybval{position:absolute;top:-15px;left:50%;transform:translateX(-50%);font-size:calc(8.5px * var(--fs));font-weight:700;color:var(--ink);white-space:nowrap;}
+  .yb-pair-label{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);
+    display:flex;flex-direction:column;align-items:center;line-height:1.25;margin-bottom:2px;white-space:nowrap;}
+  .yb-pair-label span{font-size:calc(9px * var(--fs));font-weight:800;}
+  .yb-pair-label .la{color:var(--primary-ink);}
+  .yb-pair-label .lb{color:var(--accent-ink);}
+  .legend.trend-legend{display:flex;gap:14px;}
+  .legend.trend-legend .li{margin-bottom:0;}
+  .yearlabels{display:flex;gap:3px;margin-top:4px;}
+  .yearlabels span{flex:1 0 22px;width:22px;min-width:22px;text-align:center;font-size:calc(9.5px * var(--fs));font-weight:700;color:var(--muted);}
+  .scroll-hint{font-size:calc(10.5px * var(--fs));color:var(--muted);text-align:right;margin-top:2px;font-style:italic;}
+
+  .seg{display:flex;background:var(--bg);border-radius:999px;padding:2px;flex:none;}
+  .seg-btn{padding:6px 12px;border-radius:999px;font-size:calc(12px * var(--fs));font-weight:700;color:var(--muted);background:none;}
+  .seg-btn.active{background:var(--primary);color:#fff;}
+
+  .donut-wrap{display:flex;align-items:center;gap:16px;margin-top:4px;}
+  .donut{width:120px;height:120px;border-radius:50%;flex:none;}
+  .legend{flex:1;font-size:calc(12.5px * var(--fs));}
+  .legend .li{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+  .legend .dot{width:10px;height:10px;border-radius:50%;flex:none;}
+  .legend .pct{margin-left:auto;font-weight:700;}
+
+  .chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+  .chip{
+    background:var(--primary-soft);color:var(--primary-ink);border-radius:999px;
+    padding:7px 12px;font-size:calc(13px * var(--fs));font-weight:600;display:flex;align-items:center;gap:6px;
+  }
+  .chip .x{color:var(--danger);font-weight:800;cursor:pointer;padding:0 2px;}
+  .btn-chip{
+    background:var(--primary-soft);color:var(--primary-ink);border-radius:999px;
+    padding:7px 13px;font-size:calc(12.5px * var(--fs));font-weight:700;
+  }
+  .btn-chip.active{background:var(--primary);color:#fff;}
+  .btn-chip:active{background:var(--primary);color:#fff;}
+  .chip .chip-label{cursor:pointer;border-bottom:1px dotted var(--primary-ink);}
+  .add-chip-row{display:flex;gap:8px;}
+  .add-chip-row input{flex:1;}
+  .add-chip-row button{padding:0 14px;border-radius:var(--radius-sm);background:var(--primary);color:#fff;font-weight:700;}
+
+  .expense-row{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:10px 2px;border-bottom:1px solid var(--line);cursor:pointer;
+  }
+  .expense-row:last-child{border-bottom:none;}
+  .expense-row .info{font-size:calc(13.5px * var(--fs));}
+  .expense-row .cat{font-weight:700;}
+  .expense-row .date{color:var(--muted);font-size:calc(11.5px * var(--fs));}
+  .expense-row .amt{font-weight:700;white-space:nowrap;margin-left:10px;}
+
+  .event-row{padding:10px 2px;border-bottom:1px solid var(--line);font-size:calc(13.5px * var(--fs));}
+  .event-row:last-child{border-bottom:none;}
+  .event-row .top{display:flex;justify-content:space-between;font-weight:700;}
+  .event-row .desc{color:var(--muted);margin-top:2px;}
+
+  .empty-state{text-align:center;color:var(--muted);font-size:calc(13px * var(--fs));padding:18px 8px;}
+
+  nav.tabbar{
+    position:fixed;bottom:0;left:0;right:0;z-index:30;
+    background:var(--nav-bg);border-top:1px solid var(--line);
+    display:flex;max-width:480px;margin:0 auto;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  nav.tabbar button{
+    flex:1;background:none;padding:9px 2px 8px;display:flex;flex-direction:column;
+    align-items:center;gap:3px;color:var(--muted);font-size:10.5px;font-weight:600;
+  }
+  nav.tabbar button svg{width:21px;height:21px;}
+  nav.tabbar button.active{color:var(--primary);}
+  nav.tabbar button.active svg{stroke:var(--primary);}
+
+  .undo-toast{
+    position:fixed;left:14px;right:14px;bottom:70px;z-index:40;max-width:452px;margin:0 auto;
+    background:var(--toast-bg);color:#fff;border-radius:var(--radius-sm);
+    padding:10px 8px 10px 14px;display:none;align-items:center;justify-content:space-between;gap:12px;
+    box-shadow:0 6px 20px rgba(0,0,0,.25);font-size:calc(13px * var(--fs));
+  }
+  .undo-arrow-btn{
+    background:rgba(255,255,255,.12);color:var(--accent);font-weight:800;font-size:calc(17px * var(--fs));
+    line-height:1;flex:none;white-space:nowrap;padding:8px 12px;border-radius:8px;font-size:calc(14px * var(--fs));
+  }
+  .undo-close-btn{background:none;color:#ffffff99;font-size:calc(13px * var(--fs));flex:none;padding:7px 6px;}
+
+  .to-top-btn{
+    position:fixed;right:14px;bottom:70px;z-index:35;width:44px;height:44px;border-radius:50%;
+    background:var(--primary);color:#fff;font-size:calc(22px * var(--fs));line-height:1;display:none;align-items:center;justify-content:center;
+    box-shadow:0 4px 14px rgba(0,0,0,.25);padding:0;
+  }
+  .to-top-btn.show{display:flex;}
+  .app-footer{font-size:calc(11.5px * var(--fs));color:var(--muted);text-align:center;line-height:1.6;padding:6px 8px 14px;}
+  .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:60;display:none;align-items:flex-start;justify-content:center;}
+  .sheet-bg.show{display:flex;}
+  .sheet{background:var(--surface);width:100%;max-width:480px;max-height:100vh;overflow-y:auto;border-radius:0 0 16px 16px;padding:12px 14px 14px;}
+  .sheet h3{margin:0 0 2px;font-size:calc(16px * var(--fs));}
+  .sheet .sg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:2px;}
+  .sheet .sg input{padding:8px 10px;font-size:calc(16px * var(--fs));border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--input-bg);color:var(--ink);}
+  .sheet .sg label{font-size:calc(11.5px * var(--fs));color:var(--muted);display:block;margin-bottom:2px;}
+  .sheet .sg input{width:100%;box-sizing:border-box;}
+  .sheet .svc-t{font-size:calc(13px * var(--fs));font-weight:700;margin:6px 0 2px;}
+  .sheet .warnline{font-size:calc(11.5px * var(--fs));color:var(--danger);min-height:0;margin-bottom:2px;}
+  .compact-card{padding:10px 12px;}
+  .compact-card .field{margin-bottom:4px;}
+  .compact-card .field input{padding:8px 10px;}
+  .compact-card .service-block{margin-bottom:8px;}
+  .compact-card .service-block .stitle{margin-bottom:4px;}
+  .compact-card .service-block .stitle-row{margin-bottom:4px;}
+  .compact-card .hint{margin-top:2px;min-height:0;line-height:1.25;}
+  .compact-card .total-row{margin-top:6px;}
+  .compact-card .btn-primary{margin-top:8px;padding:11px;}
+  .month-row-top{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;}
+  .month-row-top .field{min-width:150px;}
+  .month-btns{display:flex;flex-direction:column;gap:4px;flex:none;}
+  @media (max-width:420px){ .month-row-top .field{flex:1 1 150px !important;} }
+  .month-btns .btn-secondary{padding:6px 10px;font-size:calc(12px * var(--fs));white-space:nowrap;}
+  .month-row-top .field input{padding:8px 10px;}
+  .pref-hidden{display:none !important;}
+  .update-banner{position:fixed;left:14px;right:14px;bottom:70px;z-index:55;max-width:452px;margin:0 auto;background:var(--primary);color:#fff;
+    border-radius:var(--radius-sm);padding:10px 8px 10px 14px;display:none;align-items:center;justify-content:space-between;gap:10px;
+    box-shadow:0 6px 20px rgba(0,0,0,.3);font-size:calc(13px * var(--fs));}
+  .update-banner button{background:#fff;color:var(--primary-ink);font-weight:700;border-radius:8px;padding:8px 14px;flex:none;}
+  .update-banner .ub-close{background:none;color:#ffffffaa;padding:8px 6px;font-weight:400;}
+  .gear-btn{position:absolute;right:10px;top:10px;background:rgba(255,255,255,.16);color:#fff;border-radius:10px;font-size:calc(18px * var(--fs));line-height:1;padding:7px 10px;}
+  header.topbar{position:sticky;}
+  .fold-card .fold-head{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .fold-card .fold-head h2{margin:0 !important;}
+  .fold-card .fold-head::after{content:"▾";color:var(--muted);font-size:calc(14px * var(--fs));transition:transform .15s;flex:none;}
+  .fold-card.folded .fold-head::after{transform:rotate(-90deg);}
+  .fold-card:not(.folded) > .fold-head{margin-bottom:10px;}
+  .fold-card.folded > *:not(.fold-head){display:none !important;}
+  .set-sec{font-size:calc(12px * var(--fs));font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:14px 0 6px;}
+  .set-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:calc(14px * var(--fs));}
+  .set-row input[type=checkbox]{width:22px;height:22px;accent-color:var(--primary);}
+  .theme-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .theme-btn{border:2px solid var(--line);border-radius:12px;padding:8px 4px;font-size:calc(12px * var(--fs));font-weight:600;background:var(--surface);color:var(--ink);display:flex;flex-direction:column;align-items:center;gap:5px;}
+  .theme-btn.active{border-color:var(--primary);}
+  .theme-btn .dots{display:flex;gap:3px;}
+  .theme-btn .dots i{width:16px;height:16px;border-radius:50%;display:block;border:1px solid rgba(0,0,0,.15);}
+  .bg-grid{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+  .bg-sw{width:36px;height:36px;border-radius:50%;border:2px solid var(--line);padding:0;}
+  .bg-sw.active{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-soft);}
+  .bg-grid input[type=color]{width:40px;height:36px;padding:0;border:none;background:none;}
+  .font-seg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+  .font-seg button{border:2px solid var(--line);border-radius:10px;padding:8px 2px;background:var(--surface);color:var(--ink);font-weight:700;}
+  .font-seg button.active{border-color:var(--primary);background:var(--primary-soft);}
+  .section-gap{height:2px;}
+  .subtle-btn-row{display:flex;gap:8px;margin-top:6px;}
+
+  h3.sub{font-size:calc(13px * var(--fs));font-weight:700;color:var(--ink);margin:14px 0 8px;}
+  .info-note{font-size:calc(11.5px * var(--fs));color:var(--muted);margin-top:-4px;margin-bottom:10px;line-height:1.4;}
+  .info-head-row{display:none;}
+  .info-row{margin-bottom:10px;}
+  .info-row-top{display:flex;gap:6px;align-items:flex-start;margin-bottom:4px;}
+  .info-order-btns{display:flex;flex-direction:column;gap:2px;flex:none;}
+  .info-order-btn{
+    width:24px;height:17px;padding:0;font-size:calc(9px * var(--fs));line-height:1;
+    background:var(--bg);color:var(--muted);border:1px solid var(--line);border-radius:4px;
+  }
+  .info-order-btn:disabled{opacity:.3;}
+  .info-order-btn:not(:disabled):active{background:var(--primary-soft);color:var(--primary-ink);}
+  .info-row textarea.info-label-input{
+    flex:1;min-width:0;font-size:calc(13.5px * var(--fs));font-weight:700;background:var(--bg);
+    padding:9px 10px;resize:none;overflow:hidden;line-height:1.35;
+    font-family:inherit;white-space:pre-wrap;word-break:break-word;
+    border-radius:var(--radius-sm);border:1px solid var(--line);
+  }
+  .info-row textarea.info-label-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft);}
+  .info-row input[data-info-value]{width:100%;font-size:calc(13.5px * var(--fs));padding:9px 10px;}
+  .info-row textarea[data-info-value]{
+    width:100%;font-size:calc(13.5px * var(--fs));padding:9px 10px;resize:none;overflow:hidden;
+    line-height:1.35;font-family:inherit;white-space:pre-wrap;word-break:break-word;
+    border-radius:var(--radius-sm);border:1px solid var(--line);background:var(--input-bg);color:var(--ink);
+  }
+  .info-row textarea[data-info-value]:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft);}
+  .info-row .info-del-btn{flex:none;color:var(--danger);background:none;font-size:calc(15px * var(--fs));font-weight:800;padding:4px 6px;line-height:1;}
+
+  select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path fill='%2363797F' d='M5 7l5 5 5-5z'/></svg>");background-repeat:no-repeat;background-position:right 10px center;padding-right:32px;}
+
+  ::placeholder{color:var(--placeholder);}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">🏠 Учёт квартиры</div>
+    <h1 id="topbarTitle">Главная</h1>
+    <button class="gear-btn" id="gearBtn" title="Вид и настройки" aria-label="Вид и настройки">⚙</button>
+  </header>
+
+  <main>
+
+    <!-- ===================== ГЛАВНАЯ ===================== -->
+    <section class="tab-panel active" id="tab-main">
+
+      <div data-card="reminders" class="card reminder-card" id="reminderCard" style="display:none">
+        <div id="reminderList"></div>
+      </div>
+
+      <div data-card="period" class="card">
+        <h2>Период для анализа</h2>
+        <div class="row2">
+          <div class="field" style="margin-bottom:0">
+            <label for="mainMonth">Месяц</label>
+            <input type="month" id="mainMonth">
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label for="mainYear">Год</label>
+            <select id="mainYear"></select>
+          </div>
+        </div>
+        <div class="row2" style="margin-top:8px">
+          <button class="btn-secondary" id="mainBackToTodayBtn" style="width:100%;text-align:center;display:none">↩ Текущий месяц</button>
+          <button class="btn-secondary" id="mainBackToPrevBtn" style="width:100%;text-align:center;display:none">← Прошлый месяц</button>
+        </div>
+        <details class="collapse-block">
+          <summary>Произвольный период</summary>
+          <div class="row2" style="margin-bottom:8px;margin-top:10px">
+            <div class="field" style="margin-bottom:0">
+              <label for="mainRangeCount">Своё количество месяцев</label>
+              <input type="number" inputmode="numeric" min="1" max="240" id="mainRangeCount" placeholder="Например, 9">
+            </div>
+            <div class="field" style="margin-bottom:0;display:flex;align-items:flex-end">
+              <button class="btn-secondary" id="mainRangeCountApplyBtn" style="width:100%">Применить</button>
+            </div>
+          </div>
+          <div class="row2">
+            <div class="field" style="margin-bottom:0">
+              <label for="mainRangeStart">С</label>
+              <input type="month" id="mainRangeStart">
+            </div>
+            <div class="field" style="margin-bottom:0">
+              <label for="mainRangeEnd">По</label>
+              <input type="month" id="mainRangeEnd">
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <div data-card="kpi" class="card">
+        <h2>Основные показатели</h2>
+        <div class="kpi-grid">
+          <div class="kpi"><div class="label">За месяц</div><div class="value" id="kpiMonth">—</div></div>
+          <div class="kpi"><div class="label">За год</div><div class="value" id="kpiYear">—</div></div>
+        </div>
+        <details class="collapse-block">
+          <summary>Ещё показатели</summary>
+          <div class="kpi-grid" style="margin-top:10px">
+            <div class="kpi"><div class="label">За произвольный период</div><div class="value" id="kpiRange">—</div></div>
+            <div class="kpi"><div class="label">Среднее в мес. (период)</div><div class="value" id="kpiAvgRange">—</div></div>
+            <div class="kpi"><div class="label">За весь период</div><div class="value" id="kpiTotal">—</div></div>
+            <div class="kpi"><div class="label">Среднее в мес. (весь период)</div><div class="value" id="kpiAvg">—</div></div>
+          </div>
+        </details>
+      </div>
+
+      <div data-card="services" class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <h2 style="margin:0">Основные услуги</h2>
+          <div class="seg" id="segSvc">
+            <button class="seg-btn active" data-mode="month">Месяц</button>
+            <button class="seg-btn" data-mode="year">Год</button>
+            <button class="seg-btn" data-mode="range">Период</button>
+          </div>
+        </div>
+        <div class="bar-list" id="svcMonthBars"></div>
+        <button class="btn-secondary" id="mainEditMonthBtn" style="width:100%;text-align:center;margin-top:10px">✏️ Ввести / изменить данные месяца</button>
+      </div>
+
+      <div data-card="structure" class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <h2 style="margin:0">Структура расходов</h2>
+          <div class="seg" id="segDonut">
+            <button class="seg-btn active" data-mode="month">Месяц</button>
+            <button class="seg-btn" data-mode="year">Год</button>
+            <button class="seg-btn" data-mode="range">Период</button>
+          </div>
+        </div>
+        <div class="donut-wrap">
+          <div class="donut" id="donutMonth"></div>
+          <div class="legend" id="legendMonth"></div>
+        </div>
+      </div>
+
+      <div data-card="trend" class="card" style="padding-left:8px;padding-right:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:0 6px;margin-bottom:8px">
+          <h2 style="margin:0;padding:0">Динамика по месяцам</h2>
+          <div class="seg" id="segTrend">
+            <button class="seg-btn active" data-mode="year">Год</button>
+            <button class="seg-btn" data-mode="range">Период</button>
+          </div>
+        </div>
+        <div style="padding:0 6px 10px">
+          <div class="field" style="margin-bottom:0">
+            <label>Показатель</label>
+            <select id="trendMetric"></select>
+          </div>
+          <details class="collapse-block" id="trendCompareDetails">
+            <summary>Сравнить с…</summary>
+            <div class="field" style="margin-bottom:0;margin-top:10px">
+              <select id="trendPeriod2"></select>
+            </div>
+            <div class="field trend-customn-row" id="trendCustomN2Wrap" style="display:none;margin-top:6px;margin-bottom:0">
+              <label>Сколько месяцев назад (от текущего)</label>
+              <input type="number" inputmode="numeric" min="1" max="240" id="trendCustomN2" placeholder="Например, 9">
+            </div>
+            <div class="row2 trend-custom-row" id="trendCustom2Wrap" style="display:none;margin-top:6px">
+              <div class="field" style="margin-bottom:0"><label>С</label><input type="month" id="trendCustomStart2"></div>
+              <div class="field" style="margin-bottom:0"><label>По</label><input type="month" id="trendCustomEnd2"></div>
+            </div>
+          </details>
+        </div>
+        <div class="legend" id="trendLegend" style="padding:0 6px 6px;display:none"></div>
+        <div class="yearchart">
+          <div class="yaxis" id="yAxis"></div>
+          <div class="ybars-wrap">
+            <div class="yearbars" id="yearBars"></div>
+            <div class="yearlabels" id="yearLabelsRow"></div>
+          </div>
+        </div>
+      </div>
+
+      <div data-card="extra" class="card">
+        <h2>Доп. расходы</h2>
+        <div class="kpi-grid">
+          <div class="kpi"><div class="label">За месяц</div><div class="value" id="kpiExtraMonth">—</div></div>
+          <div class="kpi"><div class="label">За год</div><div class="value" id="kpiExtraYear">—</div></div>
+        </div>
+        <div class="total-row"><span>Итого за месяц (коммуналка + доп.)</span><span class="v" id="kpiGrandMonth">—</span></div>
+      </div>
+
+    </section>
+
+    <!-- ===================== ВВОД ДАННЫХ ===================== -->
+    <section class="tab-panel" id="tab-input">
+
+      <div class="card compact-card">
+        <div class="month-row-top">
+          <div class="field" style="margin:0;flex:1"><label for="inputMonth">Месяц</label>
+            <input type="month" id="inputMonth"></div>
+          <div class="month-btns">
+            <button class="btn-secondary" id="inputBackToTodayBtn" style="display:none">↩ Текущий</button>
+            <button class="btn-secondary" id="inputBackToPrevBtn" style="display:none">← Прошлый</button>
+          </div>
+        </div>
+        <div class="hint" id="noPrevMonthHint"></div>
+      </div>
+
+      <div class="card compact-card">
+        <div class="service-block gas">
+          <div class="stitle-row">
+            <span class="stitle">🔥 Газ</span>
+            <span class="stitle-links">
+              <a class="link-chip" href="https://my.gas.ua/home" target="_blank" rel="noopener">Газ.юа</a>
+            </span>
+          </div>
+          <div class="row2">
+            <div class="field"><label>Показание, м³</label>
+              <input type="number" inputmode="decimal" id="f_gasReading" placeholder="0">
+              <span class="prev-badge" id="prevbadge_gas" style="display:none"></span>
+              <div class="hint" id="hint_gas"></div></div>
+            <div class="field"><label>Оплата, грн</label>
+              <input type="number" inputmode="decimal" id="f_gasPayment" placeholder="0">
+              <div class="hint hint-auto" id="autohint_gasPayment"></div></div>
+          </div>
+        </div>
+
+        <div class="service-block electro">
+          <div class="stitle-row">
+            <span class="stitle">⚡ Электро</span>
+            <span class="stitle-links">
+              <a class="link-chip" href="https://pa.oblenergo.kharkiv.ua/frontend/web/index.php/uk/changed-acc/input-data-to-account" target="_blank" rel="noopener">Показ.</a>
+              <a class="link-chip" href="https://my.zbutenergo.kharkov.ua/accounts/12741434/DetailsSaldo" target="_blank" rel="noopener">Счёт</a>
+              <a class="link-chip" href="https://pa.oblenergo.kharkiv.ua/frontend/web/index.php/uk/changed-acc/counter-history?begin=04.03.2026&end=04.09.2026#history" target="_blank" rel="noopener">История</a>
+            </span>
+          </div>
+          <div class="row2">
+            <div class="field"><label>Показание, кВт·ч</label>
+              <input type="number" inputmode="decimal" id="f_elReading" placeholder="0">
+              <span class="prev-badge" id="prevbadge_el" style="display:none"></span>
+              <div class="hint" id="hint_el"></div></div>
+            <div class="field"><label>Оплата, грн</label>
+              <input type="number" inputmode="decimal" id="f_elPayment" placeholder="0"></div>
+          </div>
+        </div>
+
+        <div class="service-block water">
+          <div class="stitle">💧 Вода</div>
+          <div class="row2">
+            <div class="field"><label>Показание, м³</label>
+              <input type="number" inputmode="decimal" id="f_waterReading" placeholder="0">
+              <span class="prev-badge" id="prevbadge_water" style="display:none"></span>
+              <div class="hint" id="hint_water"></div></div>
+            <div class="field"><label>Оплата, грн</label>
+              <input type="number" inputmode="decimal" id="f_waterPayment" placeholder="0"></div>
+          </div>
+        </div>
+
+        <div class="service-block rent">
+          <div class="stitle-row">
+            <span class="stitle">🏢 Квартплата и доставка газа</span>
+            <span class="stitle-links">
+              <a class="link-chip" href="https://my.grmu.com.ua/" target="_blank" rel="noopener">ГРМУ</a>
+            </span>
+          </div>
+          <div class="row2">
+            <div class="field" style="margin-bottom:0"><label>Квартплата, грн</label>
+              <input type="number" inputmode="decimal" id="f_rent" placeholder="0"></div>
+            <div class="field" style="margin-bottom:0"><label>Доставка газа, грн</label>
+              <input type="number" inputmode="decimal" id="f_deliveryPayment" placeholder="0">
+              <div class="hint hint-auto" id="autohint_deliveryPayment"></div></div>
+          </div>
+        </div>
+
+        <div class="total-row"><span>Итого за месяц</span><span class="v" id="inputTotal">0 грн</span></div>
+        <button class="btn-primary" id="saveMonthBtn">Сохранить месяц</button>
+        <button class="btn-danger-text" id="deleteMonthBtn" style="width:100%;margin-top:8px;text-align:center;border:1px solid var(--danger-soft);border-radius:var(--radius-sm);padding:10px;display:none">Удалить данные этого месяца</button>
+      </div>
+
+      <div class="card">
+        <h2>История по месяцам</h2>
+        <div class="field" style="margin-bottom:8px">
+          <input type="text" id="monthSearch" placeholder="Поиск: например 2025 или 06">
+        </div>
+        <div class="month-list" id="monthList"></div>
+      </div>
+
+    </section>
+
+    <!-- ===================== ДОП. РАСХОДЫ ===================== -->
+    <section class="tab-panel" id="tab-extra">
+
+      <div class="card">
+        <div class="form-title-row">
+          <button class="back-arrow-btn" id="cancelEditExpenseBtn" style="display:none" title="Отменить редактирование, вернуться к новой записи">←</button>
+          <h2 id="extraFormTitle">Новая запись</h2>
+        </div>
+        <div class="field"><label>Дата</label><input type="date" id="ex_date"></div>
+        <div class="field"><label>Категория</label>
+          <select id="ex_category"></select>
+        </div>
+        <div class="field"><label>Сумма, грн</label>
+          <input type="number" inputmode="decimal" id="ex_amount" placeholder="0"></div>
+        <div class="field" style="margin-bottom:0"><label>Примечание (необязательно)</label>
+          <input type="text" id="ex_note" placeholder="Например: абонплата за январь"></div>
+        <button class="btn-primary" id="addExpenseBtn">Добавить расход</button>
+      </div>
+
+      <div class="card">
+        <h2>По категориям</h2>
+        <div class="row2" style="margin-bottom:10px">
+          <div class="field" style="margin-bottom:0">
+            <label>Период</label>
+            <select id="extraCatPeriodType">
+              <option value="all">Итого</option>
+              <option value="year">Год</option>
+              <option value="month">Месяц</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label id="extraCatPeriodValueLabel">&nbsp;</label>
+            <select id="extraCatYear" style="display:none"></select>
+            <input type="month" id="extraCatMonth" style="display:none">
+          </div>
+        </div>
+        <div class="bar-list" id="extraCatBars"></div>
+      </div>
+
+      <div class="card">
+        <h2>Все записи</h2>
+        <div class="row2" style="margin-bottom:8px">
+          <div class="field" style="margin-bottom:0">
+            <input type="text" id="extraSearch" placeholder="Поиск: категория, примечание...">
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <select id="extraFilterCategory"><option value="">Все категории</option></select>
+          </div>
+        </div>
+        <div id="extraList"></div>
+      </div>
+
+    </section>
+
+    <!-- ===================== СПРАВОЧНИКИ ===================== -->
+    <section class="tab-panel" id="tab-ref">
+
+      <div class="card">
+        <h2>Категории доп. расходов</h2>
+                <div class="chip-row" id="categoryChips"></div>
+        <div class="add-chip-row">
+          <input type="text" id="newCategoryInput" placeholder="Название новой категории">
+          <button id="addCategoryBtn">Добавить</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Информация по квартире</h2>
+                <div class="info-head-row"><span>Название</span><span>Значение</span></div>
+        <div id="infoFields"></div>
+        <button class="btn-secondary" id="addInfoFieldBtn" style="width:100%;text-align:center;margin-top:4px">+ Добавить поле</button>
+        <div class="hint" id="infoSaveStatus" style="min-height:14px;margin-top:8px"></div>
+      </div>
+
+      <div class="card">
+        <h2>Категории событий</h2>
+        <div class="chip-row" id="eventCategoryChips"></div>
+        <div class="add-chip-row">
+          <input type="text" id="newEventCategoryInput" placeholder="Название новой категории">
+          <button id="addEventCategoryBtn">Добавить</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="form-title-row">
+          <button class="back-arrow-btn" id="cancelEditEventBtn" style="display:none" title="Отменить редактирование, вернуться к новому событию">←</button>
+          <h2 id="eventFormTitle">Новое событие</h2>
+        </div>
+        <div class="field"><label>Дата</label><input type="date" id="ev_date"></div>
+        <div class="row2">
+          <div class="field"><label>Категория</label>
+            <select id="ev_category"></select>
+          </div>
+          <div class="field"><label>Тип события</label>
+            <input type="text" id="ev_type" placeholder="Поверка счётчика"></div>
+        </div>
+        <div class="field"><label>Описание</label>
+          <input type="text" id="ev_desc" placeholder="Что произошло"></div>
+        <div class="field" style="margin-bottom:0"><label>Примечание (необязательно)</label>
+          <input type="text" id="ev_note" placeholder=""></div>
+        <button class="btn-primary" id="addEventBtn">Добавить событие</button>
+      </div>
+
+      <div class="card">
+        <h2>Журнал событий</h2>
+                <div id="eventList"></div>
+      </div>
+
+      <div class="card">
+        <h2>Вид и настройки</h2>
+        <div class="info-note">Тема, задний фон, размер шрифта, какие карточки показывать на Главной.</div>
+        <button class="btn-secondary" id="openSettingsBtn" style="width:100%;text-align:center">⚙ Открыть настройки вида</button>
+      </div>
+
+      <div class="card">
+        <h2>Резервная копия</h2>
+        <div class="info-note">Все данные хранятся только в этом браузере на этом устройстве. Если очистить кэш, переустановить Chrome или перейти на новый телефон — данные пропадут. Регулярно сохраняйте копию файлом.</div>
+        <div class="hint" id="lastBackupHint" style="margin-bottom:10px"></div>
+        <button class="btn-primary" id="backupExportBtn">Скачать резервную копию (.json)</button>
+        <div style="height:10px"></div>
+        <label class="btn-secondary" style="display:block;text-align:center;width:100%" for="backupImportInput">Восстановить из файла</label>
+        <input type="file" id="backupImportInput" accept="application/json" style="display:none">
+        <div class="hint" id="backupStatus" style="margin-top:8px"></div>
+        <div style="height:14px"></div>
+        <button class="btn-danger-text" id="resetAllBtn" style="width:100%;text-align:center;border:1px solid var(--danger-soft);border-radius:var(--radius-sm);padding:10px">Удалить все данные и начать заново</button>
+      </div>
+
+      <div class="card">
+        <h2>Экспорт в CSV</h2>
+        <div class="info-note">Для открытия в Excel/Google Таблицах отдельно от этого приложения. В отличие от резервной копии — обратно уже не загрузить, только для просмотра/анализа.</div>
+        <button class="btn-secondary" id="exportMonthlyCsvBtn" style="width:100%;text-align:center;margin-bottom:8px">Показания и оплаты (.csv)</button>
+        <button class="btn-secondary" id="exportExtraCsvBtn" style="width:100%;text-align:center">Доп. расходы (.csv)</button>
+      </div>
+
+      <div class="app-footer" id="appFooter"></div>
+      <button class="btn-secondary" id="checkUpdateBtn" style="width:100%;text-align:center">🔄 Проверить обновление</button>
+      <div class="hint" id="updateStatus" style="text-align:center;margin:6px 0 14px"></div>
+
+    </section>
+
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab-btn active" data-tab="main">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>
+      Главная
+    </button>
+    <button class="tab-btn" data-tab="input">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 10h16M9 4v16"/></svg>
+      Ввод
+    </button>
+    <button class="tab-btn" data-tab="extra">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+      Доп. расходы
+    </button>
+    <button class="tab-btn" data-tab="ref">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5a2 2 0 012-2h10l4 4v12a2 2 0 01-2 2H6a2 2 0 01-2-2z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>
+      Справочники
+    </button>
+  </nav>
+
+  <div class="sheet-bg" id="settingsSheetBg">
+    <div class="sheet">
+      <h3>Вид и настройки</h3>
+      <div class="set-sec">Карточки на Главной</div>
+      <div id="cardToggles"></div>
+      <div class="set-sec">Тема</div>
+      <div class="theme-grid" id="themeGrid"></div>
+      <div class="set-sec">Задний фон</div>
+      <div class="bg-grid" id="bgGrid"></div>
+      <div class="set-sec">Размер шрифта</div>
+      <div class="font-seg" id="fontSeg"></div>
+      <div class="hint" style="margin-top:8px">Настройки вида хранятся в этом браузере и не входят в резервную копию данных.</div>
+      <button class="btn-primary" id="settingsClose" style="margin-top:12px">Готово</button>
+    </div>
+  </div>
+
+  <div class="sheet-bg" id="monthSheetBg">
+    <div class="sheet">
+      <h3 id="msTitle">Данные месяца</h3>
+      <div class="hint" id="msSub" style="margin-bottom:4px"></div>
+      <div class="svc-t">🔥 Газ</div>
+      <div class="sg"><div><label>Показание, м³</label><input type="number" inputmode="decimal" id="ms_gasReading"></div><div><label>Оплата, грн</label><input type="number" inputmode="decimal" id="ms_gasPayment"></div></div>
+      <div class="warnline" id="msw_gas"></div>
+      <div class="svc-t">💡 Свет</div>
+      <div class="sg"><div><label>Показание, кВт·ч</label><input type="number" inputmode="decimal" id="ms_elReading"></div><div><label>Оплата, грн</label><input type="number" inputmode="decimal" id="ms_elPayment"></div></div>
+      <div class="warnline" id="msw_el"></div>
+      <div class="svc-t">💧 Вода</div>
+      <div class="sg"><div><label>Показание, м³</label><input type="number" inputmode="decimal" id="ms_waterReading"></div><div><label>Оплата, грн</label><input type="number" inputmode="decimal" id="ms_waterPayment"></div></div>
+      <div class="warnline" id="msw_water"></div>
+      <div class="svc-t">🏢 Квартплата и 🚚 доставка газа</div>
+      <div class="sg"><div><label>Квартплата, грн</label><input type="number" inputmode="decimal" id="ms_rent"></div><div><label>Доставка газа, грн</label><input type="number" inputmode="decimal" id="ms_deliveryPayment"></div></div>
+      <div class="row2" style="margin-top:10px">
+        <button class="btn-secondary" id="msCancel" style="width:100%;text-align:center">Отмена</button>
+        <button class="btn-primary" id="msSave" style="width:100%">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="update-banner" id="updateBanner">
+    <span>Доступна новая версия</span>
+    <div style="display:flex;gap:4px;align-items:center"><button id="updateNowBtn">Обновить</button><button class="ub-close" id="updateCloseBtn" title="Позже">✕</button></div>
+  </div>
+
+  <button class="to-top-btn" id="toTopBtn" title="Наверх" aria-label="Наверх">↑</button>
+
+  <div class="undo-toast" id="undoToast">
+    <span id="undoToastMsg"></span>
+    <div style="display:flex;gap:4px;align-items:center;flex:none">
+      <button id="undoToastBtn" class="undo-arrow-btn" title="Отменить">↶ Отменить</button>
+      <button id="undoToastClose" class="undo-close-btn" title="Закрыть">✕</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var STORAGE_KEY = "utilityTrackerData_v1";
+var MONTH_NAMES = ["Янв","Фев","Мар","Апр","Май","Июн","Июл","Авг","Сен","Окт","Ноя","Дек"];
+var SERVICE_COLORS = {gas:"var(--gas)", delivery:"var(--delivery)", electro:"var(--electro)", water:"var(--water)", rent:"var(--rent)"};
+
+function fmt(n){
+  n = Math.round(n||0);
+  return n.toLocaleString("ru-RU") + " грн";
+}
+function fmtNum(n, unit){
+  n = Math.round((n||0)*10)/10;
+  return n.toLocaleString("ru-RU") + (unit? " "+unit : "");
+}
+
+// ---------- Seed data (matches the Excel base: январь 2024 – июнь 2026) ----------
+var SEED_MONTHLY = [
+["2024-01",8740,477,72,10214,185,404,65,115],
+["2024-02",8782,510,73,10276,187,406,91,120],
+["2024-03",8806,335,73,10331,165,408,92,115],
+["2024-04",8813,179,73,10381,144,409,91,117],
+["2024-05",8819,56,72,10439,132,411,46,116],
+["2024-06",8824,48,72,10515,153,413,92,118],
+["2024-07",8828,64,73,10566,232,415,92,118],
+["2024-08",8833,0,73,10628,320,416,91,118],
+["2024-09",8839,20,73,10688,265,418,46,118],
+["2024-10",8848,45,72,10743,259,420,92,117],
+["2024-11",8888,72,73,10792,238,421,92,116],
+["2024-12",8930,318,72,10828,211,422,46,118],
+["2025-01",8984,335,63,10875,156,426,46,118],
+["2025-02",9041,379,63,10902,204,428,183,117],
+["2025-03",9059,453,53,10934,90,430,92,118],
+["2025-04",9066,144,62,10967,139,432,92,118],
+["2025-05",9073,55,63,10999,142,433,182,118],
+["2025-06",9079,56,62,11040,139,435,90,117],
+["2025-07",9084,48,63,11079,177,437,181,171],
+["2025-08",9092,39,62,11135,168,439,181,1],
+["2025-09",9098,64,63,11174,242,442,182,182],
+["2025-10",9113,48,62,11208,168,444,271,118],
+["2025-11",9142,119,62,11232,146,446,181,117],
+["2025-12",9211,231,62,11272,104,447,181,118],
+["2026-01",9313,550,63,11358,173,452,90,118],
+["2026-02",9393,811,62,11415,64,454,452,117],
+["2026-03",9415,636,63,11452,247,457,181,118],
+["2026-04",9422,175,62,11483,159,459,272,117],
+["2026-05",9427,56,63,11522,135,460,181,117],
+["2026-06",9432,44,62,11566,168,462,90,117]
+];
+
+function buildDefaultData(){
+  var monthly = {};
+  SEED_MONTHLY.forEach(function(row){
+    monthly[row[0]] = {
+      gasReading:row[1], gasPayment:row[2], deliveryPayment:row[3],
+      elReading:row[4], elPayment:row[5],
+      waterReading:row[6], waterPayment:row[7],
+      rent:row[8]
+    };
+  });
+  return {
+    monthly: monthly,
+    extra: [
+      {id:"seed1", date:"2024-01-10", category:"Интернет", amount:350, note:"Абонплата за январь"}
+    ],
+    categories: ["Аренда","Интернет","Страховка","Ремонт","Другие расходы"],
+    eventCategories: ["Счётчики","Ремонт","Обслуживание","Контроль","Другое"],
+    info: [
+      {id:"i1", label:"Адрес квартиры", value:""},
+      {id:"i2", label:"Лицевой счёт — газ", value:""},
+      {id:"i3", label:"Лицевой счёт — электроэнергия", value:""},
+      {id:"i4", label:"Лицевой счёт — вода", value:""},
+      {id:"i5", label:"№ счётчика газа", value:""},
+      {id:"i6", label:"№ счётчика электроэнергии", value:""},
+      {id:"i7", label:"№ счётчика воды", value:""},
+      {id:"i8", label:"Дата поверки счётчика газа", value:""},
+      {id:"i9", label:"Дата поверки счётчика электроэнергии", value:""},
+      {id:"i10", label:"Дата поверки счётчика воды", value:""},
+      {id:"i11", label:"Реквизиты УК / ОСББ", value:""},
+      {id:"i12", label:"Телефон аварийной службы", value:""},
+      {id:"i13", label:"Прочее", value:""}
+    ],
+    events: [
+      {id:"ev1", date:"2024-03-15", category:"Счётчики", type:"Поверка счётчика газа",
+       description:"Плановая поверка выполнена", note:"Свидетельство действительно до 2034 г."}
+    ]
+  };
+}
+
+var data = load();
+function migrateInfo(d){
+  // Older versions stored info as a plain {label: value} object with fixed
+  // field names. Convert to an editable array of {id, label, value} rows.
+  if(d.info && !Array.isArray(d.info)){
+    var arr = [];
+    var i = 0;
+    Object.keys(d.info).forEach(function(k){
+      i++;
+      arr.push({id:"mig"+i, label:k, value:d.info[k]||""});
+    });
+    d.info = arr;
+  }
+  if(!d.info) d.info = [];
+  // Older versions had a fixed, non-editable list of event categories.
+  if(!d.eventCategories){
+    d.eventCategories = ["Счётчики","Ремонт","Обслуживание","Контроль","Другое"];
+  }
+  return d;
+}
+function load(){
+  try{
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      var migrated = migrateInfo(JSON.parse(raw));
+      persist(migrated);
+      return migrated;
+    }
+  }catch(e){}
+  var d = buildDefaultData();
+  persist(d);
+  return d;
+}
+function persist(d){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }catch(e){}
+}
+function save(){ persist(data); }
+
+// ---------- helpers ----------
+function monthKeys(){ return Object.keys(data.monthly).sort(); }
+function prevMonthKey(key){
+  // Pure integer arithmetic — no Date/toISOString(), which converts through
+  // UTC and silently shifts the month by one in timezones ahead of UTC
+  // (e.g. Europe/Kyiv), the actual cause of the wrong consumption values.
+  var y = parseInt(key.slice(0,4),10), m = parseInt(key.slice(5,7),10);
+  m -= 1; if(m===0){ m=12; y-=1; }
+  return y + "-" + (m<10?"0":"") + m;
+}
+function monthTotal(m){
+  if(!m) return 0;
+  return (m.gasPayment||0)+(m.deliveryPayment||0)+(m.elPayment||0)+(m.waterPayment||0)+(m.rent||0);
+}
+function hasAnyPayment(m){
+  if(!m) return false;
+  return !!(m.gasPayment||m.deliveryPayment||m.elPayment||m.waterPayment||m.rent);
+}
+function hasAnyData(m){
+  if(!m) return false;
+  return FIELD_IDS.some(function(f){ return m[f]!=null && m[f]!==""; });
+}
+function consumption(key, field){
+  var cur = data.monthly[key];
+  var prev = data.monthly[prevMonthKey(key)];
+  if(!cur || !prev) return null;
+  if(cur[field]==null || prev[field]==null || cur[field]==="" || prev[field]==="") return null;
+  return cur[field]-prev[field];
+}
+function yearOf(key){ return key.slice(0,4); }
+function monthNum(key){ return parseInt(key.slice(5,7),10); }
+
+function extraForMonth(key){
+  return data.extra.filter(function(e){ return e.date && e.date.slice(0,7)===key; })
+    .reduce(function(s,e){return s+(+e.amount||0);},0);
+}
+function extraForYear(y){
+  return data.extra.filter(function(e){ return e.date && e.date.slice(0,4)===y; })
+    .reduce(function(s,e){return s+(+e.amount||0);},0);
+}
+
+// ---------- tabs ----------
+var TAB_TITLES = {main:"Главная", input:"Ввод данных", extra:"Доп. расходы", ref:"Справочники"};
+document.querySelectorAll(".tab-btn").forEach(function(btn){
+  btn.addEventListener("click", function(){
+    var tab = btn.getAttribute("data-tab");
+    document.querySelectorAll(".tab-btn").forEach(function(b){b.classList.toggle("active", b===btn);});
+    document.querySelectorAll(".tab-panel").forEach(function(p){p.classList.toggle("active", p.id==="tab-"+tab);});
+    document.getElementById("topbarTitle").textContent = TAB_TITLES[tab];
+    if(tab==="main") renderMain();
+    if(tab==="input") renderInputTab();
+    if(tab==="extra") renderExtraTab();
+    if(tab==="ref") renderRefTab();
+    window.scrollTo(0,0);
+  });
+});
+
+// ============================================================
+// ОТМЕНА УДАЛЕНИЯ (тост) — без таймера, висит пока не нажмут
+// стрелку "отменить" или крестик "закрыть"
+// ============================================================
+function showUndoToast(message, restoreFn){
+  var toast = document.getElementById("undoToast");
+  document.getElementById("undoToastMsg").textContent = message;
+  toast.style.display = "flex";
+  document.getElementById("undoToastBtn").onclick = function(){
+    toast.style.display = "none";
+    restoreFn();
+  };
+  document.getElementById("undoToastClose").onclick = function(){
+    toast.style.display = "none";
+  };
+}
+
+// ============================================================
+// ГЛАВНАЯ
+// ============================================================
+var mainMonthEl = document.getElementById("mainMonth");
+var mainYearEl = document.getElementById("mainYear");
+
+function defaultLatestMonth(){
+  var keys = monthKeys().filter(function(k){ return hasAnyPayment(data.monthly[k]); });
+  return keys.length? keys[keys.length-1] : monthKeys()[0] || todayMonthKey();
+}
+
+function initMainSelectors(){
+  mainMonthEl.value = defaultMonthByDate();
+  var years = {};
+  monthKeys().forEach(function(k){ years[yearOf(k)] = true; });
+  var curYear = new Date().getFullYear();
+  years[String(curYear)] = true;
+  var yearList = Object.keys(years).sort();
+  mainYearEl.innerHTML = yearList.map(function(y){return '<option value="'+y+'">'+y+'</option>';}).join("");
+  mainYearEl.value = String(curYear);
+
+  if(!document.getElementById("mainRangeEnd").value){
+    document.getElementById("mainRangeEnd").value = todayMonthKey();
+  }
+  if(!document.getElementById("mainRangeStart").value){
+    document.getElementById("mainRangeStart").value = prevMonthKey(prevMonthKey(todayMonthKey()));
+  }
+}
+
+// Обновляет только список годов в селекторе на Главной (например, если
+// добавлен первый месяц за новый год), не трогая текущий выбранный месяц.
+function refreshYearOptions(){
+  var years = {};
+  monthKeys().forEach(function(k){ years[yearOf(k)] = true; });
+  years[String(new Date().getFullYear())] = true;
+  var current = mainYearEl.value;
+  var yearList = Object.keys(years).sort();
+  mainYearEl.innerHTML = yearList.map(function(y){return '<option value="'+y+'">'+y+'</option>';}).join("");
+  mainYearEl.value = yearList.indexOf(current)>-1 ? current : yearList[yearList.length-1];
+}
+
+function updateBackToTodayBtn(){
+  document.getElementById("mainBackToTodayBtn").style.display = (mainMonthEl.value===todayMonthKey()) ? "none" : "block";
+  document.getElementById("mainBackToPrevBtn").style.display = (mainMonthEl.value===prevMonthKey(todayMonthKey())) ? "none" : "block";
+}
+document.getElementById("mainBackToTodayBtn").addEventListener("click", function(){
+  mainMonthEl.value = todayMonthKey();
+  renderMain();
+});
+document.getElementById("mainBackToPrevBtn").addEventListener("click", function(){
+  mainMonthEl.value = prevMonthKey(todayMonthKey());
+  renderMain();
+});
+
+mainMonthEl.addEventListener("change", renderMain);
+mainYearEl.addEventListener("change", renderMain);
+document.getElementById("mainRangeStart").addEventListener("change", renderMain);
+document.getElementById("mainRangeEnd").addEventListener("change", renderMain);
+document.getElementById("mainRangeCountApplyBtn").addEventListener("click", function(){
+  var n = parseInt(document.getElementById("mainRangeCount").value,10);
+  if(!n || n<1) return;
+  n = Math.max(1, Math.min(240, n));
+  var end = todayMonthKey();
+  var start = end;
+  for(var i=1;i<n;i++) start = prevMonthKey(start);
+  document.getElementById("mainRangeEnd").value = end;
+  document.getElementById("mainRangeStart").value = start;
+  renderMain();
+});
+
+// Список ключей месяцев от start до end включительно (по порядку, может
+// пересекать границу года). Если end раньше start — меняем местами.
+function monthRange(startKey, endKey){
+  if(!startKey || !endKey) return [];
+  if(startKey > endKey){ var t=startKey; startKey=endKey; endKey=t; }
+  var keys = [];
+  var k = startKey;
+  var guard = 0;
+  while(k <= endKey && guard < 600){
+    keys.push(k);
+    k = nextMonthKey(k);
+    guard++;
+  }
+  return keys;
+}
+
+function svcTotalsForMonth(m, qty){
+  qty = qty || {};
+  return [
+    {name:"Газ", val:(m&&m.gasPayment)||0, color:"var(--gas)", qty:qty.gas, unit:"м³"},
+    {name:"Доставка газа", val:(m&&m.deliveryPayment)||0, color:"var(--delivery)"},
+    {name:"Свет", val:(m&&m.elPayment)||0, color:"var(--electro)", qty:qty.el, unit:"кВт·ч"},
+    {name:"Вода", val:(m&&m.waterPayment)||0, color:"var(--water)", qty:qty.water, unit:"м³"},
+    {name:"Квартплата", val:(m&&m.rent)||0, color:"var(--rent)"}
+  ];
+}
+function sumConsumptionForKeys(keys, field){
+  var total = 0, any = false;
+  keys.forEach(function(k){
+    var c = consumption(k, field);
+    if(c!=null){ total += c; any = true; }
+  });
+  return any ? total : null;
+}
+function svcTotalsForKeys(keys){
+  var acc = {gasPayment:0,deliveryPayment:0,elPayment:0,waterPayment:0,rent:0};
+  keys.forEach(function(k){
+    var m = data.monthly[k];
+    if(!m) return;
+    acc.gasPayment += m.gasPayment||0;
+    acc.deliveryPayment += m.deliveryPayment||0;
+    acc.elPayment += m.elPayment||0;
+    acc.waterPayment += m.waterPayment||0;
+    acc.rent += m.rent||0;
+  });
+  var qty = {
+    gas: sumConsumptionForKeys(keys,"gasReading"),
+    el: sumConsumptionForKeys(keys,"elReading"),
+    water: sumConsumptionForKeys(keys,"waterReading")
+  };
+  return svcTotalsForMonth(acc, qty);
+}
+function svcTotalsForYear(yKey){
+  return svcTotalsForKeys(monthKeys().filter(function(k){return yearOf(k)===yKey;}));
+}
+function svcTotalsForRange(){
+  var start = document.getElementById("mainRangeStart").value;
+  var end = document.getElementById("mainRangeEnd").value;
+  return svcTotalsForKeys(monthRange(start, end));
+}
+
+var svcMode = "month";
+var donutMode = "month";
+
+document.getElementById("segSvc").addEventListener("click", function(e){
+  var btn = e.target.closest(".seg-btn"); if(!btn) return;
+  svcMode = btn.getAttribute("data-mode");
+  this.querySelectorAll(".seg-btn").forEach(function(b){b.classList.toggle("active", b===btn);});
+  renderMain();
+});
+document.getElementById("segDonut").addEventListener("click", function(e){
+  var btn = e.target.closest(".seg-btn"); if(!btn) return;
+  donutMode = btn.getAttribute("data-mode");
+  this.querySelectorAll(".seg-btn").forEach(function(b){b.classList.toggle("active", b===btn);});
+  renderMain();
+});
+
+function readingValue(key, field){
+  var m = data.monthly[key];
+  if(!m || m[field]==null || m[field]==="") return null;
+  return m[field];
+}
+
+var METRICS = [
+  {key:"total", label:"Итого расходы, грн", unit:"грн", calc:function(key){ return monthTotal(data.monthly[key]); }},
+  {key:"gasPayment", label:"Оплата газа, грн", unit:"грн", calc:function(key){ var m=data.monthly[key]; return m?(m.gasPayment||0):0; }},
+  {key:"deliveryPayment", label:"Оплата доставки газа, грн", unit:"грн", calc:function(key){ var m=data.monthly[key]; return m?(m.deliveryPayment||0):0; }},
+  {key:"elPayment", label:"Оплата электро, грн", unit:"грн", calc:function(key){ var m=data.monthly[key]; return m?(m.elPayment||0):0; }},
+  {key:"waterPayment", label:"Оплата воды, грн", unit:"грн", calc:function(key){ var m=data.monthly[key]; return m?(m.waterPayment||0):0; }},
+  {key:"rent", label:"Квартплата, грн", unit:"грн", calc:function(key){ var m=data.monthly[key]; return m?(m.rent||0):0; }},
+  {key:"gasConsumption", label:"Расход газа, м³", unit:"м³", calc:function(key){ return consumption(key,"gasReading"); }},
+  {key:"elConsumption", label:"Расход электро, кВт·ч", unit:"кВт·ч", calc:function(key){ return consumption(key,"elReading"); }},
+  {key:"waterConsumption", label:"Расход воды, м³", unit:"м³", calc:function(key){ return consumption(key,"waterReading"); }},
+  {key:"gasReadingRaw", label:"Показание газа (счётчик), м³", unit:"м³", calc:function(key){ return readingValue(key,"gasReading"); }, zeroBased:false},
+  {key:"elReadingRaw", label:"Показание электро (счётчик), кВт·ч", unit:"кВт·ч", calc:function(key){ return readingValue(key,"elReading"); }, zeroBased:false},
+  {key:"waterReadingRaw", label:"Показание воды (счётчик), м³", unit:"м³", calc:function(key){ return readingValue(key,"waterReading"); }, zeroBased:false}
+];
+
+function buildPeriodOptions(yearList, includeNoCompare){
+  var html = "";
+  if(includeNoCompare) html += '<option value="">— не сравнивать —</option>';
+  html += '<optgroup label="Год">' +
+    yearList.map(function(y){return '<option value="year:'+y+'">'+y+'</option>';}).join("") +
+    '</optgroup>';
+  html += '<optgroup label="Период">' +
+    '<option value="rangeN">Своё количество месяцев…</option>' +
+    '<option value="rangeCustom">Свой период (даты)…</option>' +
+    '</optgroup>';
+  return html;
+}
+
+function initTrendSelectors(){
+  var metricSel = document.getElementById("trendMetric");
+  var prevMetric = metricSel.value;
+  metricSel.innerHTML = METRICS.map(function(m){return '<option value="'+m.key+'">'+m.label+'</option>';}).join("");
+  if(METRICS.some(function(m){return m.key===prevMetric;})) metricSel.value = prevMetric;
+
+  var years = {};
+  monthKeys().forEach(function(k){ years[yearOf(k)] = true; });
+  years[String(new Date().getFullYear())] = true;
+  var yearList = Object.keys(years).sort();
+
+  var p2 = document.getElementById("trendPeriod2");
+  var prevP2 = p2.value;
+  p2.innerHTML = buildPeriodOptions(yearList, true);
+  p2.value = [].slice.call(p2.options).some(function(o){return o.value===prevP2;}) ? prevP2 : "";
+
+  updateTrendCustomVisibility(2);
+}
+
+// Первичный период "Динамики" теперь берётся из общего блока "Период для
+// анализа" (segTrend переключает Год/Период, сами значения — общие
+// mainYearEl / mainRangeStart / mainRangeEnd).
+var trendMode1 = "year";
+document.getElementById("segTrend").addEventListener("click", function(e){
+  var btn = e.target.closest(".seg-btn"); if(!btn) return;
+  trendMode1 = btn.getAttribute("data-mode");
+  this.querySelectorAll(".seg-btn").forEach(function(b){b.classList.toggle("active", b===btn);});
+  renderTrendChart();
+});
+function keysForTrendPrimary(){
+  if(trendMode1==="range"){
+    return monthRange(document.getElementById("mainRangeStart").value, document.getElementById("mainRangeEnd").value);
+  }
+  var y = mainYearEl.value;
+  var keys = [];
+  for(var i=1;i<=12;i++) keys.push(y+"-"+(i<10?"0":"")+i);
+  return keys;
+}
+
+function updateTrendCustomVisibility(n){
+  var sel = document.getElementById("trendPeriod"+n).value;
+  document.getElementById("trendCustomN"+n+"Wrap").style.display = sel==="rangeN" ? "block" : "none";
+  document.getElementById("trendCustom"+n+"Wrap").style.display = sel==="rangeCustom" ? "flex" : "none";
+  if(sel==="rangeCustom"){
+    var s = document.getElementById("trendCustomStart"+n);
+    var e = document.getElementById("trendCustomEnd"+n);
+    if(!e.value) e.value = todayMonthKey();
+    if(!s.value) s.value = prevMonthKey(prevMonthKey(todayMonthKey()));
+  }
+  if(sel==="rangeN" && !document.getElementById("trendCustomN"+n).value){
+    document.getElementById("trendCustomN"+n).value = 9;
+  }
+}
+
+document.getElementById("trendMetric").addEventListener("change", renderTrendChart);
+document.getElementById("trendPeriod2").addEventListener("change", function(){
+  updateTrendCustomVisibility(2);
+  renderTrendChart();
+});
+document.getElementById("trendCustomN2").addEventListener("change", renderTrendChart);
+document.getElementById("trendCustomStart2").addEventListener("change", renderTrendChart);
+document.getElementById("trendCustomEnd2").addEventListener("change", renderTrendChart);
+
+// Превращает значение селектора периода в список ключей месяцев ("YYYY-MM").
+// Для "Год" — все 12 месяцев подряд (даже без данных, для ровной оси).
+// Для "Период" — скользящее окно последних N месяцев от сегодняшнего дня,
+// либо произвольный диапазон дат.
+function periodSelectionToKeys(n){
+  if(n===1) return keysForTrendPrimary();
+  var sel = document.getElementById("trendPeriod"+n).value;
+  if(!sel) return null;
+  if(sel.indexOf("year:")===0){
+    var y = sel.slice(5);
+    var keys = [];
+    for(var i=1;i<=12;i++) keys.push(y+"-"+(i<10?"0":"")+i);
+    return keys;
+  }
+  if(sel.indexOf("range:")===0){
+    var count = parseInt(sel.slice(6),10);
+    var end = todayMonthKey();
+    var start = end;
+    for(var j=1;j<count;j++) start = prevMonthKey(start);
+    return monthRange(start, end);
+  }
+  if(sel==="rangeN"){
+    var cnt = parseInt(document.getElementById("trendCustomN"+n).value,10) || 1;
+    cnt = Math.max(1, Math.min(240, cnt));
+    var e2 = todayMonthKey();
+    var s2 = e2;
+    for(var k=1;k<cnt;k++) s2 = prevMonthKey(s2);
+    return monthRange(s2, e2);
+  }
+  if(sel==="rangeCustom"){
+    var s3 = document.getElementById("trendCustomStart"+n).value;
+    var e3 = document.getElementById("trendCustomEnd"+n).value;
+    return monthRange(s3, e3);
+  }
+  return null;
+}
+
+function periodLabel(key, isYearMode){
+  return isYearMode ? MONTH_NAMES[monthNum(key)-1] : (MONTH_NAMES[monthNum(key)-1] + " " + yearOf(key).slice(2));
+}
+
+function renderTrendChart(){
+  var metricKey = document.getElementById("trendMetric").value;
+  var metric = METRICS.filter(function(m){return m.key===metricKey;})[0] || METRICS[0];
+  var decimals = metric.decimals || 0;
+  var zeroBased = metric.zeroBased!==false;
+  var mKey = mainMonthEl.value;
+
+  function fmtVal(v){
+    if(v==null) return "";
+    return v.toLocaleString("ru-RU", {minimumFractionDigits:decimals, maximumFractionDigits:decimals});
+  }
+
+  var keys1 = periodSelectionToKeys(1) || [];
+  var keys2raw = periodSelectionToKeys(2);
+  var isYear1 = trendMode1==="year";
+  var isYear2 = keys2raw && document.getElementById("trendPeriod2").value.indexOf("year:")===0;
+
+  var slotCount = Math.max(keys1.length, keys2raw ? keys2raw.length : 0);
+  var labelKeys = keys1.length>=slotCount ? keys1 : keys2raw;
+  var labelsIsYear = keys1.length>=slotCount ? isYear1 : isYear2;
+
+  var s1 = [], s2 = keys2raw ? [] : null;
+  for(var i=0;i<slotCount;i++){
+    var k1 = keys1[i];
+    s1.push(k1 && data.monthly[k1] ? metric.calc(k1) : null);
+    if(keys2raw){
+      var k2 = keys2raw[i];
+      s2.push(k2 && data.monthly[k2] ? metric.calc(k2) : null);
+    }
+  }
+
+  var allVals = s1.concat(s2||[]).filter(function(v){return v!=null;});
+  var maxY = Math.max.apply(null, allVals.concat([zeroBased?1:0]));
+  var minY = 0;
+  if(!zeroBased && allVals.length){
+    minY = Math.min.apply(null, allVals);
+    var pad = (maxY-minY)*0.08 || Math.abs(minY)*0.01 || 1;
+    minY = Math.max(0, minY-pad);
+  }
+  var range = (maxY-minY) || 1;
+
+  function heightPct(v){
+    if(v==null) return 0;
+    return Math.max(2, Math.round((v-minY)/range*100));
+  }
+
+  var legend = document.getElementById("trendLegend");
+  var p1label = trendMode1==="year" ? ("Год "+mainYearEl.value) : "Период";
+  var p2sel = document.getElementById("trendPeriod2");
+  if(s2){
+    legend.style.display = "flex";
+    legend.className = "legend trend-legend";
+    legend.innerHTML =
+      '<div class="li"><span class="dot" style="background:var(--primary)"></span>'+p1label+'</div>'+
+      '<div class="li"><span class="dot" style="background:var(--accent)"></span>'+p2sel.options[p2sel.selectedIndex].text+'</div>';
+  } else {
+    legend.style.display = "none";
+  }
+
+  document.getElementById("yearBars").innerHTML = s1.map(function(v1, i){
+    var v2 = s2 ? s2[i] : null;
+    var h1 = heightPct(v1);
+    var curKey = keys1[i];
+    var isCur = !s2 && curKey===mKey;
+
+    if(s2){
+      var h2 = heightPct(v2);
+      var bar1 = '<div class="yb series-a" style="height:'+h1+'%"></div>';
+      var bar2 = '<div class="yb series-b" style="height:'+h2+'%"></div>';
+      var label = (v1!=null || v2!=null) ?
+        '<div class="yb-pair-label">'+
+          (v1!=null? '<span class="la">'+fmtVal(v1)+'</span>' : '')+
+          (v2!=null? '<span class="lb">'+fmtVal(v2)+'</span>' : '')+
+        '</div>' : '';
+      return '<div class="yb-slot">'+label+bar1+bar2+'</div>';
+    }
+    var bar1 = '<div class="yb'+(isCur?" cur":"")+'" style="height:'+h1+'%">'+
+      (v1!=null? '<span class="ybval">'+fmtVal(v1)+'</span>' : '')+'</div>';
+    return '<div class="yb-slot">'+bar1+'</div>';
+  }).join("");
+
+  document.getElementById("yearLabelsRow").innerHTML = (labelKeys||[]).map(function(k){
+    return "<span>"+periodLabel(k, labelsIsYear)+"</span>";
+  }).join("");
+  document.getElementById("yAxis").innerHTML =
+    '<span>'+fmtVal(maxY)+'</span>'+
+    '<span>'+fmtVal((maxY+minY)/2)+'</span>'+
+    '<span>'+fmtVal(minY)+'</span>';
+}
+
+function mainReadingsFilled(m){
+  return !!m && m.gasReading!=null && m.gasReading!=="" && m.elReading!=null && m.elReading!=="";
+}
+function waterReadingFilled(m){
+  return !!m && m.waterReading!=null && m.waterReading!=="";
+}
+function allPaymentsFilled(m){
+  if(!m) return false;
+  return ["gasPayment","deliveryPayment","elPayment","waterPayment","rent"].every(function(f){
+    return m[f]!=null && m[f]!=="";
+  });
+}
+function monthShortLabel(key){
+  return MONTH_NAMES[monthNum(key)-1] + " " + yearOf(key);
+}
+
+function renderReminders(){
+  var today = new Date();
+  var day = today.getDate();
+  var curKey = todayMonthKey();
+  var prevKey = prevMonthKey(curKey);
+  var mPrev = data.monthly[prevKey];
+  var mCur = data.monthly[curKey];
+  var prevLabel = monthShortLabel(prevKey);
+  var curLabel = monthShortLabel(curKey);
+  var lines = [];
+
+  // Газ и электро — показания и оплата вносятся с 1-го числа ЗА ПРОШЛЫЙ месяц
+  if(day>=1 && !mainReadingsFilled(mPrev)){
+    lines.push("Внести показания газа и электро за "+prevLabel);
+  }
+  // Вода — показания вносятся с 17-го ЗА ТЕКУЩИЙ месяц
+  if(day>=17 && !waterReadingFilled(mCur)){
+    lines.push("Внести показания воды за "+curLabel);
+  }
+  // Оплата — с 10-го числа, тоже ЗА ПРОШЛЫЙ месяц
+  if(day>=10 && !allPaymentsFilled(mPrev)){
+    lines.push("Не оплачено за "+prevLabel);
+  }
+
+  var card = document.getElementById("reminderCard");
+  if(!lines.length){
+    card.style.display = "none";
+    return;
+  }
+  card.style.display = "block";
+  document.getElementById("reminderList").innerHTML = lines.map(function(t){
+    return '<div class="rline"><span class="dot">⏰</span><span>'+t+'</span></div>';
+  }).join("");
+}
+
+function renderMain(){
+  renderReminders();
+  updateBackToTodayBtn();
+  var mKey = mainMonthEl.value;
+  var yKey = mainYearEl.value;
+  var m = data.monthly[mKey];
+
+  document.getElementById("kpiMonth").textContent = fmt(monthTotal(m));
+  var yearTotal = monthKeys().filter(function(k){return yearOf(k)===yKey;})
+    .reduce(function(s,k){return s+monthTotal(data.monthly[k]);},0);
+  document.getElementById("kpiYear").textContent = fmt(yearTotal);
+
+  var rangeKeys = monthRange(document.getElementById("mainRangeStart").value, document.getElementById("mainRangeEnd").value);
+  var rangeTotal = rangeKeys.reduce(function(s,k){return s+monthTotal(data.monthly[k]);},0);
+  document.getElementById("kpiRange").textContent = fmt(rangeTotal);
+
+  var filledInRange = rangeKeys.filter(function(k){return hasAnyPayment(data.monthly[k]);});
+  var avgRange = filledInRange.length? filledInRange.reduce(function(s,k){return s+monthTotal(data.monthly[k]);},0)/filledInRange.length : 0;
+  document.getElementById("kpiAvgRange").textContent = fmt(avgRange);
+
+  var filled = monthKeys().filter(function(k){return hasAnyPayment(data.monthly[k]);});
+  var avg = filled.length? filled.reduce(function(s,k){return s+monthTotal(data.monthly[k]);},0)/filled.length : 0;
+  document.getElementById("kpiAvg").textContent = fmt(avg);
+
+  var total = monthKeys().reduce(function(s,k){return s+monthTotal(data.monthly[k]);},0);
+  document.getElementById("kpiTotal").textContent = fmt(total);
+
+  function svcForMode(mode){
+    if(mode==="year") return svcTotalsForYear(yKey);
+    if(mode==="range") return svcTotalsForRange();
+    var qty = {
+      gas: consumption(mKey,"gasReading"),
+      el: consumption(mKey,"elReading"),
+      water: consumption(mKey,"waterReading")
+    };
+    return svcTotalsForMonth(m, qty);
+  }
+
+  var svcBars = svcForMode(svcMode);
+  var maxSvc = Math.max.apply(null, svcBars.map(function(s){return s.val;}).concat([1]));
+  document.getElementById("svcMonthBars").innerHTML = svcBars.map(function(s){
+    var pct = Math.round(s.val/maxSvc*100);
+    var qtyText = (s.qty!=null) ? '<span class="bl-qty">'+fmtNum(s.qty, s.unit)+'</span>' : '';
+    return '<div class="bar-item"><div class="bl-top"><span>'+s.name+'</span><span class="bl-right">'+qtyText+'<span class="bl-cost">'+fmt(s.val)+'</span></span></div>'+
+      '<div class="bl-track"><div class="bl-fill" style="width:'+pct+'%;background:'+s.color+'"></div></div></div>';
+  }).join("");
+
+  // donut
+  var svc = svcForMode(donutMode);
+  var sum = svc.reduce(function(s,x){return s+x.val;},0) || 1;
+  var acc = 0;
+  var stops = svc.map(function(s){
+    var start = acc/sum*360; acc += s.val; var end = acc/sum*360;
+    return s.color+" "+start.toFixed(1)+"deg "+end.toFixed(1)+"deg";
+  }).join(", ");
+  document.getElementById("donutMonth").style.background =
+    sum>1 ? "conic-gradient(" + stops + ")" : "var(--line)";
+  document.getElementById("donutMonth").style.setProperty("mask","radial-gradient(circle, transparent 42%, black 43%)");
+  document.getElementById("donutMonth").style.setProperty("-webkit-mask","radial-gradient(circle, transparent 42%, black 43%)");
+  document.getElementById("legendMonth").innerHTML = svc.map(function(s){
+    var pct = sum>1? Math.round(s.val/sum*100) : 0;
+    return '<div class="li"><span class="dot" style="background:'+s.color+'"></span>'+s.name+'<span class="pct">'+pct+'%</span></div>';
+  }).join("");
+
+  // Динамика по месяцам (показатель + сравнение периодов) — отдельная функция
+  renderTrendChart();
+
+  document.getElementById("kpiExtraMonth").textContent = fmt(extraForMonth(mKey));
+  document.getElementById("kpiExtraYear").textContent = fmt(extraForYear(yKey));
+  document.getElementById("kpiGrandMonth").textContent = fmt(monthTotal(m)+extraForMonth(mKey));
+}
+
+// ============================================================
+// ВВОД ДАННЫХ
+// ============================================================
+var inputMonthEl = document.getElementById("inputMonth");
+var FIELD_IDS = ["gasReading","gasPayment","deliveryPayment","elReading","elPayment","waterReading","waterPayment","rent"];
+var FORM_MAP = {
+  gasReading:"f_gasReading", gasPayment:"f_gasPayment", deliveryPayment:"f_deliveryPayment",
+  elReading:"f_elReading", elPayment:"f_elPayment",
+  waterReading:"f_waterReading", waterPayment:"f_waterPayment", rent:"f_rent"
+};
+
+function loadFormFromMonth(key){
+  var m = data.monthly[key] || {};
+  FIELD_IDS.forEach(function(f){
+    document.getElementById(FORM_MAP[f]).value = (m[f]!=null && m[f]!=="") ? m[f] : "";
+  });
+
+  // Автоподстановка квартплаты и доставки газа из прошлого месяца — они
+  // обычно не меняются. Подставляется только в НЕ заполненные поля нового
+  // месяца, значения остаются редактируемыми.
+  var isNewMonth = !hasAnyData(m);
+  document.getElementById("autohint_deliveryPayment").textContent = "";
+  document.getElementById("autohint_gasPayment").textContent = "";
+  if(isNewMonth){
+    var prev = data.monthly[prevMonthKey(key)];
+    if(prev){
+      if(prev.rent!=null && prev.rent!==""){
+        document.getElementById(FORM_MAP.rent).value = prev.rent;
+      }
+      if(prev.deliveryPayment!=null && prev.deliveryPayment!==""){
+        document.getElementById(FORM_MAP.deliveryPayment).value = prev.deliveryPayment;
+        document.getElementById("autohint_deliveryPayment").textContent = "Подставлено из прошлого месяца — можно изменить";
+      }
+    }
+  }
+
+  updateInputHints(key);
+  updateInputTotal();
+  document.getElementById("deleteMonthBtn").style.display = hasAnyData(data.monthly[key]) ? "block" : "none";
+  updateInputBackToTodayBtn();
+}
+
+function updateInputHints(key){
+  var prevKey = prevMonthKey(key);
+  var prev = data.monthly[prevKey];
+
+  document.getElementById("noPrevMonthHint").textContent = prev ? "" :
+    "Нет данных за предыдущий месяц — расход посчитать не получится, это нормально для первой записи.";
+
+  ["gas","el","water"].forEach(function(kind){
+    var readingId = kind==="el" ? "elReading" : kind+"Reading";
+    var unit = kind==="el" ? "кВт·ч" : "м³";
+    var curRaw = document.getElementById(FORM_MAP[readingId]).value;
+    var curVal = parseFloat(curRaw);
+    var prevVal = prev ? prev[readingId] : null;
+    var hasPrev = prevVal!=null && prevVal!=="";
+
+    var hintEl = document.getElementById("hint_"+kind);
+    hintEl.classList.remove("hint-warn");
+    if(curRaw!=="" && !isNaN(curVal) && hasPrev){
+      var diff = curVal - prevVal;
+      if(diff<0){
+        hintEl.textContent = "⚠ Меньше пред. ("+fmtNum(prevVal,unit)+")! Проверьте.";
+        hintEl.classList.add("hint-warn");
+      } else {
+        hintEl.textContent = "Расход: "+fmtNum(diff, unit)+" · пред. "+fmtNum(prevVal,"").trim();
+      }
+    } else {
+      hintEl.textContent = hasPrev ? "Пред.: "+fmtNum(prevVal,unit) : "";
+    }
+  });
+}
+
+FIELD_IDS.forEach(function(f){
+  document.getElementById(FORM_MAP[f]).addEventListener("input", function(){
+    updateInputHints(inputMonthEl.value);
+    updateInputTotal();
+  });
+});
+
+function updateInputTotal(){
+  function v(id){ var x = parseFloat(document.getElementById(FORM_MAP[id]).value); return isNaN(x)?0:x; }
+  var total = v("gasPayment")+v("deliveryPayment")+v("elPayment")+v("waterPayment")+v("rent");
+  document.getElementById("inputTotal").textContent = fmt(total);
+}
+
+// Выбор месяца (сверху или тапом по истории) больше не спрашивает
+// подтверждение — просмотр данных должен быть свободным. Защита стоит
+// непосредственно на сохранении (ниже), где реально может произойти
+// потеря данных.
+var lastInputMonthValue = "";
+inputMonthEl.addEventListener("change", function(){
+  lastInputMonthValue = inputMonthEl.value;
+  loadFormFromMonth(inputMonthEl.value);
+});
+function updateInputBackToTodayBtn(){
+  document.getElementById("inputBackToTodayBtn").style.display = (inputMonthEl.value===todayMonthKey()) ? "none" : "block";
+  document.getElementById("inputBackToPrevBtn").style.display = (inputMonthEl.value===prevMonthKey(todayMonthKey())) ? "none" : "block";
+}
+document.getElementById("inputBackToTodayBtn").addEventListener("click", function(){
+  inputMonthEl.value = todayMonthKey();
+  lastInputMonthValue = inputMonthEl.value;
+  loadFormFromMonth(inputMonthEl.value);
+});
+document.getElementById("inputBackToPrevBtn").addEventListener("click", function(){
+  inputMonthEl.value = prevMonthKey(todayMonthKey());
+  lastInputMonthValue = inputMonthEl.value;
+  loadFormFromMonth(inputMonthEl.value);
+});
+
+// сохранение месяца: общая функция (используется на вкладке «Ввод» и на Главной)
+function commitMonth(key, rec, afterFn){
+  var existing = data.monthly[key];
+  var had = hasAnyData(existing);
+  var backup = had ? JSON.parse(JSON.stringify(existing)) : null;
+  if(had){
+    var changed = FIELD_IDS.some(function(f){
+      var a = existing[f]==null||existing[f]===""? "" : existing[f];
+      var b = rec[f]==null||rec[f]===""? "" : rec[f];
+      return String(a)!==String(b);
+    });
+    if(!changed) return false;
+    var ok = confirm("Месяц "+key+" уже сохранён ("+fmt(monthTotal(existing))+"). Сохранить изменения показаний/оплат? После сохранения можно будет отменить.");
+    if(!ok) return false;
+  }
+  data.monthly[key] = rec;
+  save();
+  refreshYearOptions(); initTrendSelectors();
+  renderMonthList();
+  if(afterFn) afterFn();
+  if(had){
+    showUndoToast("Месяц "+key+" изменён.", function(){
+      data.monthly[key] = backup;
+      save();
+      refreshYearOptions(); initTrendSelectors();
+      renderMonthList();
+      if(afterFn) afterFn(true);
+    });
+  }
+  return true;
+}
+
+document.getElementById("saveMonthBtn").addEventListener("click", function(){
+  var key = inputMonthEl.value;
+  if(!key){ alert("Выберите месяц"); return; }
+
+  var rec = {};
+  FIELD_IDS.forEach(function(f){
+    var raw = document.getElementById(FORM_MAP[f]).value;
+    rec[f] = raw===""? "" : parseFloat(raw);
+  });
+
+  var wasEmpty = !hasAnyData(data.monthly[key]);
+  var done = commitMonth(key, rec, function(isUndo){
+    if(inputMonthEl.value===key){
+      if(isUndo) loadFormFromMonth(key);
+      renderInputTab_afterSave();
+      document.getElementById("deleteMonthBtn").style.display = hasAnyData(data.monthly[key]) ? "block" : "none";
+    }
+  });
+  if(!done && !wasEmpty) return;
+  var btn = document.getElementById("saveMonthBtn");
+  var old = btn.textContent; btn.textContent = "Сохранено ✓";
+  setTimeout(function(){ btn.textContent = old; }, 1200);
+});
+
+document.getElementById("deleteMonthBtn").addEventListener("click", function(){
+  var key = inputMonthEl.value;
+  var existing = data.monthly[key];
+  if(!hasAnyData(existing)) return;
+  var ok = confirm("Удалить ВСЕ данные месяца "+key+" ("+fmt(monthTotal(existing))+")? Показания, оплаты и расчёт расхода для этого месяца исчезнут. После удаления можно будет отменить.");
+  if(!ok) return;
+  var backup = JSON.parse(JSON.stringify(existing));
+  delete data.monthly[key];
+  save();
+  refreshYearOptions(); initTrendSelectors();
+  renderMonthList();
+  loadFormFromMonth(key);
+  showUndoToast("Месяц "+key+" удалён ("+fmt(monthTotal(backup))+").", function(){
+    data.monthly[key] = backup;
+    save();
+    refreshYearOptions(); initTrendSelectors();
+    renderMonthList();
+    loadFormFromMonth(key);
+  });
+});
+
+function renderInputTab_afterSave(){
+  updateInputHints(inputMonthEl.value);
+}
+
+function renderMonthList(){
+  var keys = monthKeys().slice().sort().reverse();
+  var query = (document.getElementById("monthSearch").value || "").trim().toLowerCase();
+  if(query){
+    keys = keys.filter(function(k){ return k.toLowerCase().indexOf(query)>-1; });
+  }
+  if(!monthKeys().length){
+    document.getElementById("monthList").innerHTML = '<div class="empty-state">Пока нет ни одной записи. Выберите месяц выше и заполните форму.</div>';
+    return;
+  }
+  if(!keys.length){
+    document.getElementById("monthList").innerHTML = '<div class="empty-state">Ничего не найдено по запросу «'+query+'».</div>';
+    return;
+  }
+  document.getElementById("monthList").innerHTML = keys.map(function(k){
+    var m = data.monthly[k];
+    var filled = hasAnyPayment(m);
+    return '<div class="month-row'+(filled?"":" empty")+'" data-key="'+k+'">'+
+      '<span class="m">'+k+'</span><span class="a">'+(filled? fmt(monthTotal(m)) : "нет данных")+'</span></div>';
+  }).join("");
+  document.querySelectorAll("#monthList .month-row").forEach(function(row){
+    row.addEventListener("click", function(){
+      var key = row.getAttribute("data-key");
+      inputMonthEl.value = key;
+      lastInputMonthValue = key;
+      loadFormFromMonth(key);
+      window.scrollTo(0,0);
+    });
+  });
+}
+document.getElementById("monthSearch").addEventListener("input", renderMonthList);
+
+function renderInputTab(){
+  if(!inputMonthEl.value){
+    inputMonthEl.value = defaultMonthByDate();
+  }
+  lastInputMonthValue = inputMonthEl.value;
+  loadFormFromMonth(inputMonthEl.value);
+  renderMonthList();
+}
+
+function nextMonthToFill(){
+  var keys = monthKeys().filter(function(k){return hasAnyPayment(data.monthly[k]);}).sort();
+  if(!keys.length) return todayMonthKey();
+  return nextMonthKey(keys[keys.length-1]);
+}
+function nextMonthKey(key){
+  var y = parseInt(key.slice(0,4),10), m = parseInt(key.slice(5,7),10);
+  m += 1; if(m===13){ m=1; y+=1; }
+  return y + "-" + (m<10?"0":"") + m;
+}
+function todayMonthKey(){
+  var d = new Date();
+  var m = d.getMonth()+1;
+  return d.getFullYear() + "-" + (m<10?"0":"") + m;
+}
+// До 15 числа включительно обычно ещё вносятся показания/оплата за
+// ПРОШЛЫЙ месяц, поэтому по умолчанию открываем его. С 15-го — уже
+// открываем текущий. Кнопки "Текущий месяц"/"Прошлый месяц" всегда ведут
+// на реальный текущий/прошлый месяц, независимо от этого правила.
+function defaultMonthByDate(){
+  var day = new Date().getDate();
+  return day < 15 ? prevMonthKey(todayMonthKey()) : todayMonthKey();
+}
+function todayDateKey(){
+  var d = new Date();
+  var m = d.getMonth()+1, day = d.getDate();
+  return d.getFullYear() + "-" + (m<10?"0":"") + m + "-" + (day<10?"0":"") + day;
+}
+
+// ============================================================
+// ДОП. РАСХОДЫ
+// ============================================================
+function renderCategorySelect(){
+  var sel = document.getElementById("ex_category");
+  sel.innerHTML = data.categories.map(function(c){return '<option>'+c+'</option>';}).join("");
+}
+
+var editingExpenseId = null;
+
+function fillExpenseForm(e){
+  document.getElementById("ex_date").value = e.date;
+  document.getElementById("ex_category").value = e.category;
+  document.getElementById("ex_amount").value = e.amount;
+  document.getElementById("ex_note").value = e.note || "";
+}
+function clearExpenseForm(){
+  document.getElementById("ex_date").value = todayDateKey();
+  document.getElementById("ex_category").selectedIndex = 0;
+  document.getElementById("ex_amount").value = "";
+  document.getElementById("ex_note").value = "";
+}
+function setExpenseEditMode(e){
+  editingExpenseId = e ? e.id : null;
+  document.getElementById("extraFormTitle").textContent = e ? "Изменить запись" : "Новая запись";
+  document.getElementById("addExpenseBtn").textContent = e ? "Сохранить изменения" : "Добавить расход";
+  document.getElementById("cancelEditExpenseBtn").style.display = e ? "block" : "none";
+  if(e) fillExpenseForm(e); else clearExpenseForm();
+  if(e) document.getElementById("extraFormTitle").scrollIntoView({behavior:"smooth", block:"start"});
+}
+document.getElementById("cancelEditExpenseBtn").addEventListener("click", function(){
+  setExpenseEditMode(null);
+});
+
+document.getElementById("addExpenseBtn").addEventListener("click", function(){
+  var date = document.getElementById("ex_date").value;
+  var category = document.getElementById("ex_category").value;
+  var amount = parseFloat(document.getElementById("ex_amount").value);
+  var note = document.getElementById("ex_note").value;
+  if(!date || !amount){ alert("Укажите дату и сумму"); return; }
+
+  if(editingExpenseId){
+    var idx = data.extra.findIndex(function(e){return e.id===editingExpenseId;});
+    if(idx>-1){
+      var old = data.extra[idx];
+      var ok = confirm("Сохранить изменения в записи «"+old.category+", "+old.date+", "+fmt(old.amount)+"»? Прежние значения будут перезаписаны.");
+      if(!ok) return;
+      data.extra[idx] = {id:editingExpenseId, date:date, category:category, amount:amount, note:note};
+    }
+  } else {
+    data.extra.push({id:"e"+Date.now(), date:date, category:category, amount:amount, note:note});
+  }
+  save();
+  setExpenseEditMode(null);
+  renderExtraTab();
+});
+
+function initExtraCatPeriodSelectors(){
+  var years = {};
+  data.extra.forEach(function(e){ if(e.date) years[e.date.slice(0,4)] = true; });
+  monthKeys().forEach(function(k){ years[yearOf(k)] = true; });
+  years[String(new Date().getFullYear())] = true;
+  var yearList = Object.keys(years).sort();
+
+  var yearSel = document.getElementById("extraCatYear");
+  var prevYear = yearSel.value;
+  yearSel.innerHTML = yearList.map(function(y){return '<option value="'+y+'">'+y+'</option>';}).join("");
+  yearSel.value = yearList.indexOf(prevYear)>-1 ? prevYear : yearList[yearList.length-1];
+
+  var monthInput = document.getElementById("extraCatMonth");
+  if(!monthInput.value) monthInput.value = todayMonthKey();
+}
+
+function updateExtraCatPeriodVisibility(){
+  var type = document.getElementById("extraCatPeriodType").value;
+  document.getElementById("extraCatYear").style.display = type==="year" ? "block" : "none";
+  document.getElementById("extraCatMonth").style.display = type==="month" ? "block" : "none";
+  document.getElementById("extraCatPeriodValueLabel").textContent =
+    type==="year" ? "Год" : (type==="month" ? "Месяц" : "");
+}
+document.getElementById("extraCatPeriodType").addEventListener("change", function(){
+  updateExtraCatPeriodVisibility();
+  renderExtraCatBars();
+});
+document.getElementById("extraCatYear").addEventListener("change", renderExtraCatBars);
+document.getElementById("extraCatMonth").addEventListener("change", renderExtraCatBars);
+
+function renderExtraCatBars(){
+  var type = document.getElementById("extraCatPeriodType").value;
+  var items = data.extra;
+  if(type==="year"){
+    var y = document.getElementById("extraCatYear").value;
+    items = items.filter(function(e){ return e.date && e.date.slice(0,4)===y; });
+  } else if(type==="month"){
+    var mk = document.getElementById("extraCatMonth").value;
+    items = items.filter(function(e){ return e.date && e.date.slice(0,7)===mk; });
+  }
+  var totals = {};
+  data.categories.forEach(function(c){ totals[c] = 0; });
+  items.forEach(function(e){ totals[e.category] = (totals[e.category]||0) + (+e.amount||0); });
+  var max = Math.max.apply(null, Object.values(totals).concat([1]));
+  var listEl = document.getElementById("extraCatBars");
+  if(!items.length){
+    listEl.innerHTML = '<div class="empty-state">Нет расходов за выбранный период.</div>';
+    return;
+  }
+  listEl.innerHTML = Object.keys(totals).map(function(c){
+    var pct = Math.round(totals[c]/max*100);
+    return '<div class="bar-item"><div class="bl-top"><span>'+c+'</span><span>'+fmt(totals[c])+'</span></div>'+
+      '<div class="bl-track"><div class="bl-fill" style="width:'+pct+'%;background:var(--accent)"></div></div></div>';
+  }).join("");
+}
+
+function renderExtraFilterCategory(){
+  var sel = document.getElementById("extraFilterCategory");
+  var current = sel.value;
+  sel.innerHTML = '<option value="">Все категории</option>' +
+    data.categories.map(function(c){return '<option>'+c+'</option>';}).join("");
+  if(data.categories.indexOf(current)>-1) sel.value = current;
+}
+
+function renderExtraList(){
+  var items = data.extra.slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+  var query = (document.getElementById("extraSearch").value || "").trim().toLowerCase();
+  var catFilter = document.getElementById("extraFilterCategory").value;
+  if(catFilter){
+    items = items.filter(function(e){ return e.category===catFilter; });
+  }
+  if(query){
+    items = items.filter(function(e){
+      return (e.category||"").toLowerCase().indexOf(query)>-1 ||
+             (e.note||"").toLowerCase().indexOf(query)>-1 ||
+             (e.date||"").indexOf(query)>-1;
+    });
+  }
+  if(!data.extra.length){
+    document.getElementById("extraList").innerHTML = '<div class="empty-state">Пока нет ни одной записи.</div>';
+    return;
+  }
+  if(!items.length){
+    document.getElementById("extraList").innerHTML = '<div class="empty-state">Ничего не найдено.</div>';
+    return;
+  }
+  document.getElementById("extraList").innerHTML = items.map(function(e){
+    return '<div class="expense-row" data-id="'+e.id+'">'+
+      '<div class="info"><div class="cat">'+e.category+'</div><div class="date">'+e.date+(e.note? " · "+e.note : "")+'</div></div>'+
+      '<div style="display:flex;align-items:center;gap:8px"><span class="amt">'+fmt(e.amount)+'</span>'+
+      '<button class="btn-danger-text" data-del="'+e.id+'">✕</button></div></div>';
+  }).join("");
+  document.querySelectorAll("#extraList .expense-row").forEach(function(row){
+    row.addEventListener("click", function(ev){
+      if(ev.target.closest("[data-del]")) return;
+      var id = row.getAttribute("data-id");
+      var e = data.extra.find(function(x){return x.id===id;});
+      if(e) setExpenseEditMode(e);
+    });
+  });
+  document.querySelectorAll("#extraList [data-del]").forEach(function(btn){
+    btn.addEventListener("click", function(ev){
+      ev.stopPropagation();
+      var id = btn.getAttribute("data-del");
+      var idx = data.extra.findIndex(function(x){return x.id===id;});
+      if(idx<0) return;
+      var backup = data.extra[idx];
+      if(!confirm("Удалить запись «"+backup.category+", "+fmt(backup.amount)+"»? После удаления можно будет отменить.")) return;
+      data.extra.splice(idx,1);
+      if(editingExpenseId===id) setExpenseEditMode(null);
+      save();
+      renderExtraTab();
+      showUndoToast("Запись «"+backup.category+", "+fmt(backup.amount)+"» удалена.", function(){
+        data.extra.splice(idx,0,backup);
+        save();
+        renderExtraTab();
+      });
+    });
+  });
+}
+document.getElementById("extraSearch").addEventListener("input", renderExtraList);
+document.getElementById("extraFilterCategory").addEventListener("change", renderExtraList);
+
+function renderExtraTab(){
+  renderCategorySelect();
+  renderExtraFilterCategory();
+  if(!document.getElementById("ex_date").value){
+    document.getElementById("ex_date").value = todayDateKey();
+  }
+  initExtraCatPeriodSelectors();
+  updateExtraCatPeriodVisibility();
+  renderExtraCatBars();
+  renderExtraList();
+}
+
+// ============================================================
+// СПРАВОЧНИКИ
+// ============================================================
+function renderCategoryChips(){
+  document.getElementById("categoryChips").innerHTML = data.categories.map(function(c){
+    return '<span class="chip"><span class="chip-label" data-cat-edit="'+esc(c)+'">'+c+'</span>'+
+      '<span class="x" data-cat="'+esc(c)+'">✕</span></span>';
+  }).join("");
+  document.querySelectorAll("#categoryChips .x").forEach(function(x){
+    x.addEventListener("click", function(){
+      var cat = x.getAttribute("data-cat");
+      if(confirm('Удалить категорию "'+cat+'"? Уже сохранённые расходы этой категории не изменятся.')){
+        data.categories = data.categories.filter(function(c){return c!==cat;});
+        save();
+        renderRefTab();
+      }
+    });
+  });
+  document.querySelectorAll("#categoryChips .chip-label").forEach(function(lbl){
+    lbl.addEventListener("click", function(){
+      var oldName = lbl.getAttribute("data-cat-edit");
+      var newName = prompt("Новое название категории:", oldName);
+      if(newName==null) return;
+      newName = newName.trim();
+      if(!newName || newName===oldName) return;
+      if(data.categories.indexOf(newName)>-1){
+        alert('Категория "'+newName+'" уже существует.');
+        return;
+      }
+      var ok = confirm('Переименовать «'+oldName+'» в «'+newName+'»? Все сохранённые расходы этой категории будут перенесены на новое название.');
+      if(!ok) return;
+      var idx = data.categories.indexOf(oldName);
+      if(idx>-1) data.categories[idx] = newName;
+      data.extra.forEach(function(e){ if(e.category===oldName) e.category = newName; });
+      save();
+      renderRefTab();
+    });
+  });
+}
+document.getElementById("addCategoryBtn").addEventListener("click", function(){
+  var input = document.getElementById("newCategoryInput");
+  var val = input.value.trim();
+  if(!val) return;
+  if(data.categories.indexOf(val)===-1){ data.categories.push(val); save(); }
+  input.value = "";
+  renderRefTab();
+});
+
+function renderEventCategoryChips(){
+  document.getElementById("eventCategoryChips").innerHTML = data.eventCategories.map(function(c){
+    return '<span class="chip"><span class="chip-label" data-evcat-edit="'+esc(c)+'">'+c+'</span>'+
+      '<span class="x" data-evcat="'+esc(c)+'">✕</span></span>';
+  }).join("");
+  document.querySelectorAll("#eventCategoryChips .x").forEach(function(x){
+    x.addEventListener("click", function(){
+      var cat = x.getAttribute("data-evcat");
+      if(data.eventCategories.length<=1){ alert("Должна остаться хотя бы одна категория."); return; }
+      if(confirm('Удалить категорию "'+cat+'"? Уже сохранённые события этой категории не изменятся.')){
+        data.eventCategories = data.eventCategories.filter(function(c){return c!==cat;});
+        save();
+        renderRefTab();
+      }
+    });
+  });
+  document.querySelectorAll("#eventCategoryChips .chip-label").forEach(function(lbl){
+    lbl.addEventListener("click", function(){
+      var oldName = lbl.getAttribute("data-evcat-edit");
+      var newName = prompt("Новое название категории:", oldName);
+      if(newName==null) return;
+      newName = newName.trim();
+      if(!newName || newName===oldName) return;
+      if(data.eventCategories.indexOf(newName)>-1){
+        alert('Категория "'+newName+'" уже существует.');
+        return;
+      }
+      var ok = confirm('Переименовать «'+oldName+'» в «'+newName+'»? Все сохранённые события этой категории будут перенесены на новое название.');
+      if(!ok) return;
+      var idx = data.eventCategories.indexOf(oldName);
+      if(idx>-1) data.eventCategories[idx] = newName;
+      data.events.forEach(function(ev){ if(ev.category===oldName) ev.category = newName; });
+      save();
+      renderRefTab();
+    });
+  });
+}
+document.getElementById("addEventCategoryBtn").addEventListener("click", function(){
+  var input = document.getElementById("newEventCategoryInput");
+  var val = input.value.trim();
+  if(!val) return;
+  if(data.eventCategories.indexOf(val)===-1){ data.eventCategories.push(val); save(); }
+  input.value = "";
+  renderRefTab();
+});
+function renderEventCategorySelect(){
+  var sel = document.getElementById("ev_category");
+  var current = sel.value;
+  sel.innerHTML = data.eventCategories.map(function(c){return '<option>'+c+'</option>';}).join("");
+  if(data.eventCategories.indexOf(current)>-1) sel.value = current;
+}
+
+function esc(s){ return (s||"").replace(/"/g,"&quot;"); }
+
+function autoGrow(el){
+  el.style.height = "auto";
+  el.style.height = (el.scrollHeight) + "px";
+}
+
+function moveInfoRow(id, dir){
+  var idx = data.info.findIndex(function(r){return r.id===id;});
+  if(idx<0) return;
+  var newIdx = idx+dir;
+  if(newIdx<0 || newIdx>=data.info.length) return;
+  var tmp = data.info[idx];
+  data.info[idx] = data.info[newIdx];
+  data.info[newIdx] = tmp;
+  save();
+  renderInfoFields();
+}
+
+function renderInfoFields(){
+  var wrap = document.getElementById("infoFields");
+  if(!data.info.length){
+    wrap.innerHTML = '<div class="empty-state">Полей пока нет — добавьте первое кнопкой ниже.</div>';
+    return;
+  }
+  wrap.innerHTML = data.info.map(function(row, idx){
+    return '<div class="info-row" data-id="'+row.id+'">'+
+      '<div class="info-row-top">'+
+      '<div class="info-order-btns">'+
+        '<button class="info-order-btn" data-info-up="'+row.id+'"'+(idx===0?' disabled':'')+'>▲</button>'+
+        '<button class="info-order-btn" data-info-down="'+row.id+'"'+(idx===data.info.length-1?' disabled':'')+'>▼</button>'+
+      '</div>'+
+      '<textarea class="info-label-input" rows="1" data-info-label="'+row.id+'" placeholder="Название">'+esc(row.label)+'</textarea>'+
+      '<button class="info-del-btn" data-info-del="'+row.id+'">✕</button>'+
+      '</div>'+
+      '<textarea rows="1" data-info-value="'+row.id+'" placeholder="Значение">'+esc(row.value)+'</textarea>'+
+      '</div>';
+  }).join("");
+
+  function flashSaved(label){
+    var st = document.getElementById("infoSaveStatus");
+    st.style.color = "var(--primary-ink)";
+    st.textContent = "Сохранено ✓ — «"+label+"»";
+    clearTimeout(window._infoStatusTimer);
+    window._infoStatusTimer = setTimeout(function(){ st.textContent = ""; }, 2500);
+  }
+
+  wrap.querySelectorAll("[data-info-label]").forEach(function(ta){
+    autoGrow(ta);
+    ta.addEventListener("input", function(){ autoGrow(ta); });
+    ta.addEventListener("change", function(){
+      var row = data.info.find(function(r){return r.id===ta.getAttribute("data-info-label");});
+      if(!row) return;
+      var newVal = ta.value;
+      if(newVal===row.label) return;
+      var ok = confirm('Изменить название\n«'+(row.label||"(пусто)")+'»\nна\n«'+(newVal||"(пусто)")+'»?');
+      if(!ok){ ta.value = row.label; autoGrow(ta); return; }
+      row.label = newVal;
+      save();
+      flashSaved(row.label || "(без названия)");
+    });
+  });
+  wrap.querySelectorAll("[data-info-value]").forEach(function(inp){
+    autoGrow(inp);
+    inp.addEventListener("input", function(){ autoGrow(inp); });
+    inp.addEventListener("change", function(){
+      var row = data.info.find(function(r){return r.id===inp.getAttribute("data-info-value");});
+      if(!row) return;
+      var newVal = inp.value;
+      if(newVal===row.value) return;
+      var ok = confirm('Изменить значение поля «'+(row.label||"(без названия)")+'»\nс «'+(row.value||"(пусто)")+'»\nна «'+(newVal||"(пусто)")+'»?');
+      if(!ok){ inp.value = row.value; autoGrow(inp); return; }
+      row.value = newVal;
+      save();
+      flashSaved(row.label || "(без названия)");
+    });
+  });
+  wrap.querySelectorAll("[data-info-up]").forEach(function(btn){
+    btn.addEventListener("click", function(){ moveInfoRow(btn.getAttribute("data-info-up"), -1); });
+  });
+  wrap.querySelectorAll("[data-info-down]").forEach(function(btn){
+    btn.addEventListener("click", function(){ moveInfoRow(btn.getAttribute("data-info-down"), 1); });
+  });
+  wrap.querySelectorAll("[data-info-del]").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var id = btn.getAttribute("data-info-del");
+      var row = data.info.find(function(r){return r.id===id;});
+      if(confirm('Удалить поле "'+(row?row.label:"")+'"?')){
+        data.info = data.info.filter(function(r){return r.id!==id;});
+        save();
+        renderInfoFields();
+      }
+    });
+  });
+}
+
+document.getElementById("addInfoFieldBtn").addEventListener("click", function(){
+  data.info.push({id:"i"+Date.now(), label:"", value:""});
+  save();
+  renderInfoFields();
+  var last = document.querySelector("#infoFields .info-row:last-child .info-label-input");
+  if(last) last.focus();
+});
+
+var editingEventId = null;
+
+function fillEventForm(ev){
+  document.getElementById("ev_date").value = ev.date;
+  document.getElementById("ev_category").value = ev.category;
+  document.getElementById("ev_type").value = ev.type;
+  document.getElementById("ev_desc").value = ev.description || "";
+  document.getElementById("ev_note").value = ev.note || "";
+}
+function clearEventForm(){
+  document.getElementById("ev_type").value = "";
+  document.getElementById("ev_desc").value = "";
+  document.getElementById("ev_note").value = "";
+  document.getElementById("ev_date").value = todayDateKey();
+  document.getElementById("ev_category").selectedIndex = 0;
+}
+function setEventEditMode(ev){
+  editingEventId = ev ? ev.id : null;
+  if(ev){ var fc = document.getElementById("eventFormTitle").closest(".fold-card"); if(fc) unfoldCard(fc); }
+  document.getElementById("eventFormTitle").textContent = ev ? "Изменить событие" : "Новое событие";
+  document.getElementById("addEventBtn").textContent = ev ? "Сохранить изменения" : "Добавить событие";
+  document.getElementById("cancelEditEventBtn").style.display = ev ? "block" : "none";
+  if(ev) fillEventForm(ev); else clearEventForm();
+  document.getElementById("eventFormTitle").scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+document.getElementById("cancelEditEventBtn").addEventListener("click", function(){
+  setEventEditMode(null);
+});
+
+document.getElementById("addEventBtn").addEventListener("click", function(){
+  var date = document.getElementById("ev_date").value;
+  var category = document.getElementById("ev_category").value;
+  var type = document.getElementById("ev_type").value;
+  var desc = document.getElementById("ev_desc").value;
+  var note = document.getElementById("ev_note").value;
+  if(!date || !type){ alert("Укажите дату и тип события"); return; }
+  if(editingEventId){
+    var idx = data.events.findIndex(function(e){return e.id===editingEventId;});
+    if(idx>-1){
+      var old = data.events[idx];
+      var ok = confirm("Сохранить изменения в событии «"+old.type+", "+old.date+"»? Прежние значения будут перезаписаны.");
+      if(!ok) return;
+      data.events[idx] = {id:editingEventId, date:date, category:category, type:type, description:desc, note:note};
+    }
+  } else {
+    data.events.push({id:"ev"+Date.now(), date:date, category:category, type:type, description:desc, note:note});
+  }
+  save();
+  setEventEditMode(null);
+  renderEventList();
+});
+
+function renderEventList(){
+  var items = data.events.slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+  if(!items.length){
+    document.getElementById("eventList").innerHTML = '<div class="empty-state">Событий пока нет.</div>';
+    return;
+  }
+  document.getElementById("eventList").innerHTML = items.map(function(e){
+    return '<div class="event-row" data-id="'+e.id+'"><div class="top"><span>'+e.type+'</span>'+
+      '<span style="display:flex;align-items:center;gap:8px">'+e.date+
+      '<button class="btn-danger-text" data-del-ev="'+e.id+'" style="padding:2px 4px">✕</button></span></div>'+
+      '<div class="desc">'+e.category+(e.description? " · "+e.description : "")+(e.note? " · "+e.note : "")+'</div></div>';
+  }).join("");
+  document.querySelectorAll("#eventList .event-row").forEach(function(row){
+    row.addEventListener("click", function(e){
+      if(e.target.closest("[data-del-ev]")) return;
+      var id = row.getAttribute("data-id");
+      var ev = data.events.find(function(x){return x.id===id;});
+      if(ev) setEventEditMode(ev);
+    });
+  });
+  document.querySelectorAll("#eventList [data-del-ev]").forEach(function(btn){
+    btn.addEventListener("click", function(e){
+      e.stopPropagation();
+      var id = btn.getAttribute("data-del-ev");
+      var idx = data.events.findIndex(function(ev){return ev.id===id;});
+      if(idx<0) return;
+      var backup = data.events[idx];
+      if(!confirm("Удалить событие «"+backup.type+"»? После удаления можно будет отменить.")) return;
+      data.events.splice(idx,1);
+      if(editingEventId===id) setEventEditMode(null);
+      save();
+      renderEventList();
+      showUndoToast("Событие «"+backup.type+"» удалено.", function(){
+        data.events.splice(idx,0,backup);
+        save();
+        renderEventList();
+      });
+    });
+  });
+}
+
+function renderRefTab(){
+  renderCategoryChips();
+  renderInfoFields();
+  renderEventCategoryChips();
+  renderEventCategorySelect();
+  if(!editingEventId && !document.getElementById("ev_date").value){
+    document.getElementById("ev_date").value = todayDateKey();
+  }
+  renderEventList();
+  renderLastBackupHint();
+}
+
+// ---------- Резервная копия ----------
+var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
+var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
+var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
+var APP_VERSION = "1.9";
+function fmtDateTime(iso){
+  if(!iso) return "—";
+  var d = new Date(iso);
+  if(isNaN(d.getTime())) return "—";
+  return pad2(d.getDate())+"."+pad2(d.getMonth()+1)+"."+d.getFullYear()+" "+pad2(d.getHours())+":"+pad2(d.getMinutes());
+}
+function renderAppFooter(){
+  document.getElementById("appFooter").innerHTML =
+    "Версия программы: <b>"+APP_VERSION+"</b><br>"+
+    "Последний экспорт: <b>"+fmtDateTime(localStorage.getItem(LAST_BACKUP_KEY))+"</b><br>"+
+    "Последний импорт: <b>"+fmtDateTime(localStorage.getItem(LAST_IMPORT_KEY))+"</b>";
+}
+function pad2(n){ return n<10? "0"+n : ""+n; }
+function backupFileName(){
+  var d = new Date();
+  return "uchet-kvartiry-backup-" + d.getFullYear()+pad2(d.getMonth()+1)+pad2(d.getDate())+"-"+pad2(d.getHours())+pad2(d.getMinutes())+".json";
+}
+
+function renderLastBackupHint(){
+  renderAppFooter();
+  var el = document.getElementById("lastBackupHint");
+  var raw = localStorage.getItem(LAST_BACKUP_KEY);
+  if(!raw){
+    el.textContent = "⚠ Резервная копия ещё ни разу не сохранялась.";
+    el.style.color = "var(--danger)";
+    return;
+  }
+  var last = new Date(raw);
+  var days = Math.floor((Date.now() - last.getTime()) / 86400000);
+  if(days<=0){
+    el.textContent = "Последняя копия: сегодня.";
+    el.style.color = "var(--muted)";
+  } else if(days<30){
+    el.textContent = "Последняя копия: "+days+" "+dayWord(days)+" назад.";
+    el.style.color = "var(--muted)";
+  } else {
+    el.textContent = "⚠ Последняя копия: "+days+" "+dayWord(days)+" назад — стоит обновить.";
+    el.style.color = "var(--danger)";
+  }
+}
+function dayWord(n){
+  var n10 = n%10, n100 = n%100;
+  if(n100>=11 && n100<=14) return "дней";
+  if(n10===1) return "день";
+  if(n10>=2 && n10<=4) return "дня";
+  return "дней";
+}
+
+document.getElementById("backupExportBtn").addEventListener("click", function(){
+  var blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url; a.download = backupFileName();
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  localStorage.setItem(LAST_BACKUP_KEY, new Date().toISOString());
+  renderLastBackupHint();
+  var st = document.getElementById("backupStatus");
+  st.textContent = "Файл скачан: " + a.download;
+  st.style.color = "var(--primary-ink)";
+});
+
+// ---------- Экспорт в CSV ----------
+function csvEscape(v){
+  v = (v==null?"":String(v));
+  if(v.indexOf(";")>-1 || v.indexOf('"')>-1 || v.indexOf("\n")>-1){
+    v = '"' + v.replace(/"/g,'""') + '"';
+  }
+  return v;
+}
+function downloadCSV(filename, headers, rows){
+  var lines = [headers.map(csvEscape).join(";")];
+  rows.forEach(function(r){ lines.push(r.map(csvEscape).join(";")); });
+  var csv = "\uFEFF" + lines.join("\r\n"); // BOM — чтобы Excel правильно показал кириллицу
+  var blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById("exportMonthlyCsvBtn").addEventListener("click", function(){
+  var headers = ["Месяц","Показание газа, м³","Расход газа, м³","Оплата газа, грн","Оплата доставки, грн",
+    "Показание электро, кВт·ч","Расход электро, кВт·ч","Оплата электро, грн",
+    "Показание воды, м³","Расход воды, м³","Оплата воды, грн","Квартплата, грн","Итого, грн"];
+  var rows = monthKeys().map(function(k){
+    var m = data.monthly[k];
+    return [k, m.gasReading, consumption(k,"gasReading"), m.gasPayment, m.deliveryPayment,
+      m.elReading, consumption(k,"elReading"), m.elPayment,
+      m.waterReading, consumption(k,"waterReading"), m.waterPayment, m.rent, monthTotal(m)];
+  });
+  downloadCSV("pokazaniya-i-oplaty.csv", headers, rows);
+});
+
+document.getElementById("exportExtraCsvBtn").addEventListener("click", function(){
+  var headers = ["Дата","Категория","Сумма, грн","Примечание"];
+  var rows = data.extra.slice().sort(function(a,b){return a.date.localeCompare(b.date);})
+    .map(function(e){ return [e.date, e.category, e.amount, e.note||""]; });
+  downloadCSV("dop-rashody.csv", headers, rows);
+});
+
+document.getElementById("backupImportInput").addEventListener("change", function(e){
+  var file = e.target.files[0];
+  if(!file) return;
+  var st = document.getElementById("backupStatus");
+  var reader = new FileReader();
+  reader.onload = function(){
+    try{
+      var parsed = JSON.parse(reader.result);
+      if(!parsed || typeof parsed!=="object" || !parsed.monthly){
+        throw new Error("bad shape");
+      }
+      if(!confirm("Заменить все текущие данные содержимым файла? Перед заменой текущие данные автоматически сохранятся в файл резервной копии.")){
+        e.target.value = "";
+        return;
+      }
+      // резервная копия текущих данных перед заменой: файл + копия в браузере
+      var snapshot = JSON.stringify(data, null, 2);
+      try{ localStorage.setItem(PRE_IMPORT_KEY, JSON.stringify({savedAt:new Date().toISOString(), data:data})); }catch(e2){}
+      var bBlob = new Blob([snapshot], {type:"application/json"});
+      var bUrl = URL.createObjectURL(bBlob);
+      var bA = document.createElement("a");
+      bA.href = bUrl; bA.download = backupFileName().replace("backup-","backup-before-import-");
+      document.body.appendChild(bA); bA.click(); document.body.removeChild(bA);
+      URL.revokeObjectURL(bUrl);
+      var preName = bA.download;
+      var prevData = data;
+      data = migrateInfo(parsed);
+      save();
+      localStorage.setItem(LAST_IMPORT_KEY, new Date().toISOString());
+      renderLastBackupHint();
+      st.style.color = "var(--primary-ink)";
+      st.textContent = "Данные восстановлены из файла: " + file.name + ". Предыдущие данные сохранены в файл " + preName + ".";
+      initMainSelectors(); initTrendSelectors();
+      renderMain();
+      renderInputTab();
+      renderRefTab();
+      renderExtraTab();
+    }catch(err){
+      st.style.color = "var(--danger)";
+      st.textContent = "Не удалось прочитать файл — это не резервная копия этого приложения.";
+    }
+    e.target.value = "";
+  };
+  reader.readAsText(file, "utf-8");
+});
+
+document.getElementById("resetAllBtn").addEventListener("click", function(){
+  if(!confirm("Удалить все данные в этом браузере без возможности восстановления (если нет отдельного файла копии)? Это действие необратимо.")) return;
+  if(!confirm("Точно удалить всё? Подтвердите ещё раз.")) return;
+  data = buildDefaultData();
+  save();
+  initMainSelectors(); initTrendSelectors();
+  renderMain();
+  renderInputTab();
+  renderRefTab();
+  renderExtraTab();
+  document.getElementById("backupStatus").textContent = "Данные сброшены к примеру по умолчанию.";
+  document.getElementById("backupStatus").style.color = "var(--muted)";
+});
+
+// ============================================================
+// НАСТРОЙКИ ВИДА: карточки Главной, темы, фон, шрифт, сворачивание
+// ============================================================
+var PREFS_KEY = "utilityTrackerPrefs_v1";
+var prefs = (function(){
+  var p = {};
+  try{ p = JSON.parse(localStorage.getItem(PREFS_KEY)||"{}") || {}; }catch(e){ p = {}; }
+  p.cards = p.cards || {}; p.fold = p.fold || {};
+  p.theme = p.theme || "teal"; p.bg = p.bg || ""; p.font = p.font || "1";
+  return p;
+})();
+function savePrefs(){ try{ localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); }catch(e){} }
+
+var THEMES = {
+  teal:  {name:"Бирюзовая", dark:false, dots:["#155A5F","#F3F6F5","#E2963A"], vars:{}},
+  blue:  {name:"Синяя", dark:false, dots:["#1F4E9C","#F2F5FA","#E2963A"], vars:{
+    "--bg":"#F2F5FA","--ink":"#1B2A41","--muted":"#627089","--line":"#DDE5F0","--primary":"#1F4E9C","--primary-ink":"#163A75","--primary-soft":"#E3EBF8","--bar-bg":"#B4C6E4"}},
+  warm:  {name:"Тёплая", dark:false, dots:["#8A5A2B","#F8F4EE","#C98A3A"], vars:{
+    "--bg":"#F8F4EE","--ink":"#3A2A1B","--muted":"#86745F","--line":"#E8DECF","--primary":"#8A5A2B","--primary-ink":"#5E3B17","--primary-soft":"#F3E7D8","--bar-bg":"#DCC3A3","--toast-bg":"#3A2A1B"}},
+  violet:{name:"Лавандовая", dark:false, dots:["#5B4BA8","#F5F3FA","#E2963A"], vars:{
+    "--bg":"#F5F3FA","--ink":"#27224A","--muted":"#6E6A8F","--line":"#E4E0F0","--primary":"#5B4BA8","--primary-ink":"#41337F","--primary-soft":"#E9E5F6","--bar-bg":"#C3BAE4","--toast-bg":"#27224A"}},
+  dark:  {name:"Тёмная", dark:true, dots:["#2E8C93","#121A1C","#E8B96A"], vars:{
+    "--bg":"#121A1C","--surface":"#1B2528","--ink":"#E6EEEE","--muted":"#92A5A8","--line":"#2B3A3D","--primary":"#1F6E75","--primary-ink":"#8FD3D8","--primary-soft":"#223C3F",
+    "--accent":"#E8B96A","--accent-ink":"#E8B96A","--input-bg":"#222F32","--nav-bg":"#1B2528","--rem-bg":"#3A3220","--rem-line":"#5A4A22","--bar-bg":"#3C5558",
+    "--placeholder":"#5C6E71","--toast-bg":"#2E3F43","--danger-soft":"#3A2224","--danger":"#E36B6E"}}
+};
+var BG_LIGHT = [["","По теме"],["#FFFFFF","Белый"],["#ECEFF1","Серый"],["#FAF6EC","Кремовый"],["#E8F3EE","Мятный"],["#E6F0FA","Голубой"]];
+var BG_DARK  = [["","По теме"],["#000000","Чёрный"],["#1E1E1E","Графит"],["#0F1626","Тёмно-синий"],["#0F1F18","Тёмно-зелёный"]];
+var FONT_SIZES = [["0.9","A−"],["1","A"],["1.15","A+"],["1.3","A++"]];
+var CARD_LIST = [["reminders","Напоминания"],["period","Период для анализа"],["kpi","Основные показатели"],["services","Основные услуги"],
+  ["structure","Структура расходов"],["trend","Динамика по месяцам"],["extra","Доп. расходы"]];
+var themeVarNames = {};
+Object.keys(THEMES).forEach(function(k){ Object.keys(THEMES[k].vars).forEach(function(v){ themeVarNames[v]=1; }); });
+
+function applyPrefs(){
+  var root = document.documentElement;
+  Object.keys(themeVarNames).forEach(function(v){ root.style.removeProperty(v); });
+  var th = THEMES[prefs.theme] || THEMES.teal;
+  Object.keys(th.vars).forEach(function(v){ root.style.setProperty(v, th.vars[v]); });
+  if(prefs.bg) root.style.setProperty("--bg", prefs.bg);
+  root.style.setProperty("--fs", prefs.font);
+  root.style.colorScheme = th.dark ? "dark" : "light";
+  document.querySelectorAll("[data-card]").forEach(function(c){
+    c.classList.toggle("pref-hidden", prefs.cards[c.getAttribute("data-card")]===false);
+  });
+}
+
+function renderSettings(){
+  var ct = document.getElementById("cardToggles");
+  ct.innerHTML = CARD_LIST.map(function(c){
+    return '<label class="set-row"><span>'+c[1]+'</span><input type="checkbox" data-card-toggle="'+c[0]+'"'+(prefs.cards[c[0]]===false?"":" checked")+'></label>';
+  }).join("");
+  ct.querySelectorAll("input").forEach(function(i){
+    i.addEventListener("change", function(){
+      prefs.cards[i.getAttribute("data-card-toggle")] = i.checked; savePrefs(); applyPrefs();
+    });
+  });
+  var tg = document.getElementById("themeGrid");
+  tg.innerHTML = Object.keys(THEMES).map(function(k){
+    var t = THEMES[k];
+    return '<button class="theme-btn'+(prefs.theme===k?" active":"")+'" data-theme="'+k+'"><span class="dots">'+
+      t.dots.map(function(c){ return '<i style="background:'+c+'"></i>'; }).join("")+'</span>'+t.name+'</button>';
+  }).join("");
+  tg.querySelectorAll("button").forEach(function(b){
+    b.addEventListener("click", function(){
+      prefs.theme = b.getAttribute("data-theme");
+      var wasDark = false; // фон сбрасываем при смене светлая/тёмная
+      if(prefs.bg && !isPresetFor(prefs.theme, prefs.bg)) prefs.bg = "";
+      savePrefs(); applyPrefs(); renderSettings(); rerenderCharts();
+    });
+  });
+  var th = THEMES[prefs.theme] || THEMES.teal;
+  var presets = th.dark ? BG_DARK : BG_LIGHT;
+  var bgHtml = presets.map(function(b){
+    var col = b[0] || (th.vars["--bg"] || "#F3F6F5");
+    return '<button class="bg-sw'+(prefs.bg===b[0]?" active":"")+'" data-bg="'+b[0]+'" title="'+b[1]+'" style="background:'+col+'"></button>';
+  }).join("");
+  bgHtml += '<input type="color" id="bgCustom" value="'+(prefs.bg||"#F3F6F5")+'" title="Свой цвет">';
+  document.getElementById("bgGrid").innerHTML = bgHtml;
+  document.querySelectorAll("#bgGrid .bg-sw").forEach(function(b){
+    b.addEventListener("click", function(){ prefs.bg = b.getAttribute("data-bg"); savePrefs(); applyPrefs(); renderSettings(); });
+  });
+  document.getElementById("bgCustom").addEventListener("input", function(e){
+    prefs.bg = e.target.value; savePrefs(); applyPrefs();
+  });
+  document.getElementById("bgCustom").addEventListener("change", function(){ renderSettings(); });
+  var fs = document.getElementById("fontSeg");
+  fs.innerHTML = FONT_SIZES.map(function(f){
+    return '<button class="'+(prefs.font===f[0]?"active":"")+'" data-font="'+f[0]+'" style="font-size:'+(13*parseFloat(f[0]))+'px">'+f[1]+'</button>';
+  }).join("");
+  fs.querySelectorAll("button").forEach(function(b){
+    b.addEventListener("click", function(){ prefs.font = b.getAttribute("data-font"); savePrefs(); applyPrefs(); renderSettings(); });
+  });
+}
+function isPresetFor(themeKey, color){
+  var presets = (THEMES[themeKey].dark ? BG_DARK : BG_LIGHT);
+  return presets.some(function(b){ return b[0]===color; });
+}
+function rerenderCharts(){ try{ renderMain(); }catch(e){} }
+function openSettings(){ renderSettings(); document.getElementById("settingsSheetBg").classList.add("show"); }
+function closeSettings(){ document.getElementById("settingsSheetBg").classList.remove("show"); }
+document.getElementById("gearBtn").addEventListener("click", openSettings);
+document.getElementById("openSettingsBtn").addEventListener("click", openSettings);
+document.getElementById("settingsClose").addEventListener("click", closeSettings);
+document.getElementById("settingsSheetBg").addEventListener("click", function(e){ if(e.target===this) closeSettings(); });
+
+// ---------- сворачиваемые карточки «Справочников» ----------
+function unfoldCard(card){
+  card.classList.remove("folded");
+  var i = card.getAttribute("data-fold-i");
+  if(i!=null){ delete prefs.fold[i]; savePrefs(); }
+}
+function initFoldCards(){
+  document.querySelectorAll("#tab-ref > .card").forEach(function(card, i){
+    if(card.querySelector("#backupExportBtn")) return;       // резервная копия не сворачивается
+    var head = card.querySelector(".form-title-row") || card.querySelector("h2");
+    if(!head || head.parentNode!==card) return;
+    card.classList.add("fold-card");
+    card.setAttribute("data-fold-i", i);
+    head.classList.add("fold-head");
+    if(prefs.fold[i]) card.classList.add("folded");
+    head.addEventListener("click", function(e){
+      if(e.target.closest("button")) return;
+      var f = card.classList.toggle("folded");
+      if(f) prefs.fold[i] = true; else delete prefs.fold[i];
+      savePrefs();
+    });
+  });
+}
+initFoldCards();
+applyPrefs();
+
+// ---------- ввод/редактирование месяца прямо с Главной ----------
+var msKey = null;
+var MS_ID = {gasReading:"ms_gasReading",gasPayment:"ms_gasPayment",deliveryPayment:"ms_deliveryPayment",
+  elReading:"ms_elReading",elPayment:"ms_elPayment",waterReading:"ms_waterReading",waterPayment:"ms_waterPayment",rent:"ms_rent"};
+function msWarn(){
+  var prev = data.monthly[prevMonthKey(msKey)];
+  [["gas","gasReading","м³"],["el","elReading","кВт·ч"],["water","waterReading","м³"]].forEach(function(t){
+    var el = document.getElementById("msw_"+t[0]);
+    var cur = parseFloat(document.getElementById(MS_ID[t[1]]).value);
+    var pv = prev ? prev[t[1]] : null;
+    if(!isNaN(cur) && pv!=null && pv!==""){
+      el.textContent = cur<pv ? "⚠ Меньше предыдущего ("+fmtNum(pv,t[2])+")! Проверьте." : "Расход: "+fmtNum(cur-pv,t[2])+" (пред. "+fmtNum(pv,t[2])+")";
+      el.style.color = cur<pv ? "var(--danger)" : "var(--muted)";
+    } else {
+      el.textContent = (pv!=null && pv!=="") ? "Пред.: "+fmtNum(pv,t[2]) : "";
+      el.style.color = "var(--muted)";
+    }
+  });
+}
+function openMonthSheet(){
+  msKey = mainMonthEl.value;
+  if(!msKey) return;
+  var m = data.monthly[msKey] || {};
+  var isNew = !hasAnyData(m);
+  FIELD_IDS.forEach(function(f){
+    document.getElementById(MS_ID[f]).value = (m[f]!=null && m[f]!=="") ? m[f] : "";
+  });
+  if(isNew){
+    var pr = data.monthly[prevMonthKey(msKey)];
+    if(pr){
+      if(pr.rent!=null && pr.rent!=="") document.getElementById(MS_ID.rent).value = pr.rent;
+      if(pr.deliveryPayment!=null && pr.deliveryPayment!=="") document.getElementById(MS_ID.deliveryPayment).value = pr.deliveryPayment;
+    }
+  }
+  document.getElementById("msTitle").textContent = (isNew ? "Ввод данных: " : "Изменение данных: ") + msKey;
+  document.getElementById("msSub").textContent = isNew ? "Месяц ещё не заполнен. Квартплата и доставка подставлены из прошлого месяца." : "При сохранении изменений будет предупреждение и кнопка «↶ Отменить».";
+  msWarn();
+  document.getElementById("monthSheetBg").classList.add("show");
+}
+function closeMonthSheet(){ document.getElementById("monthSheetBg").classList.remove("show"); }
+document.getElementById("mainEditMonthBtn").addEventListener("click", openMonthSheet);
+document.getElementById("msCancel").addEventListener("click", closeMonthSheet);
+document.getElementById("monthSheetBg").addEventListener("click", function(e){ if(e.target===this) closeMonthSheet(); });
+FIELD_IDS.forEach(function(f){ document.getElementById(MS_ID[f]).addEventListener("input", msWarn); });
+document.getElementById("msSave").addEventListener("click", function(){
+  var key = msKey;
+  var rec = {};
+  FIELD_IDS.forEach(function(f){
+    var raw = document.getElementById(MS_ID[f]).value;
+    rec[f] = raw==="" ? "" : parseFloat(raw);
+  });
+  var bad = ["gasReading","elReading","waterReading"].some(function(f){
+    var pr = data.monthly[prevMonthKey(key)];
+    return pr && pr[f]!=null && pr[f]!=="" && rec[f]!=="" && rec[f]<pr[f];
+  });
+  if(bad && !confirm("Одно из показаний меньше, чем в предыдущем месяце. Всё равно сохранить?")) return;
+  var wasEmpty = !hasAnyData(data.monthly[key]);
+  var refresh = function(isUndo){
+    renderMain();
+    if(inputMonthEl.value===key) loadFormFromMonth(key);
+  };
+  if(wasEmpty && !hasAnyData(rec)){ closeMonthSheet(); return; }
+  commitMonth(key, rec, refresh);
+  closeMonthSheet();
+});
+
+// ---------- PWA: офлайн-режим и обновления ----------
+var swReg = null, updateRequested = false;
+var PWA_OK = ("serviceWorker" in navigator) && /^https?:$/.test(location.protocol);
+function showUpdate(worker){
+  var b = document.getElementById("updateBanner");
+  b.style.display = "flex";
+  document.getElementById("updateNowBtn").onclick = function(){
+    updateRequested = true;
+    b.style.display = "none";
+    worker.postMessage("SKIP_WAITING");
+  };
+  document.getElementById("updateCloseBtn").onclick = function(){ b.style.display = "none"; };
+}
+function setUpdateStatus(t, bad){
+  var el = document.getElementById("updateStatus");
+  el.textContent = t; el.style.color = bad ? "var(--danger)" : "var(--muted)";
+}
+function checkForUpdate(){
+  if(!PWA_OK || !swReg){
+    setUpdateStatus("Проверка обновлений работает только в версии, открытой по https (установленное приложение).", true);
+    return;
+  }
+  setUpdateStatus("Проверяю…");
+  swReg.update().then(function(){
+    if(swReg.waiting){ showUpdate(swReg.waiting); setUpdateStatus("Доступна новая версия — нажмите «Обновить» внизу."); return; }
+    if(swReg.installing){
+      setUpdateStatus("Скачивается новая версия…");
+      return; // updatefound покажет плашку по завершении
+    }
+    setUpdateStatus("Установлена последняя версия (" + APP_VERSION + ") ✓");
+  }).catch(function(){
+    setUpdateStatus("Не удалось проверить — нет связи с сервером.", true);
+  });
+}
+document.getElementById("checkUpdateBtn").addEventListener("click", checkForUpdate);
+if(PWA_OK){
+  navigator.serviceWorker.register("sw.js").then(function(reg){
+    swReg = reg;
+    if(reg.waiting && navigator.serviceWorker.controller) showUpdate(reg.waiting);
+    reg.addEventListener("updatefound", function(){
+      var nw = reg.installing;
+      if(!nw) return;
+      nw.addEventListener("statechange", function(){
+        if(nw.state==="installed" && navigator.serviceWorker.controller){
+          showUpdate(nw);
+          setUpdateStatus("Доступна новая версия — нажмите «Обновить» внизу.");
+        }
+      });
+    });
+    reg.update().catch(function(){});
+    document.addEventListener("visibilitychange", function(){
+      if(document.visibilityState==="visible") reg.update().catch(function(){});
+    });
+  }).catch(function(){});
+  navigator.serviceWorker.addEventListener("controllerchange", function(){
+    if(updateRequested) location.reload();
+  });
+} else {
+  setUpdateStatus("Режим файла: обновления и офлайн-кэш работают в установленной версии (https).");
+}
+
+// ---------- кнопка «Наверх» ----------
+var toTopBtn = document.getElementById("toTopBtn");
+function updateToTop(){
+  toTopBtn.classList.toggle("show", (window.pageYOffset||document.documentElement.scrollTop) > 400);
+}
+window.addEventListener("scroll", updateToTop, {passive:true});
+toTopBtn.addEventListener("click", function(){ window.scrollTo({top:0, behavior:"smooth"}); });
+
+// ============================================================
+// INIT
+// ============================================================
+initMainSelectors();
+initTrendSelectors();
+renderMain();
+renderInputTab();
+renderAppFooter();
+
+})();
+</script>
+</body>
+</html>
