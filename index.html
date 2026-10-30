@@ -340,6 +340,13 @@
   .font-seg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
   .font-seg button{border:2px solid var(--line);border-radius:10px;padding:8px 2px;background:var(--surface);color:var(--ink);font-weight:700;}
   .font-seg button.active{border-color:var(--primary);background:var(--primary-soft);}
+  .inline-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .inline-row .btn-secondary{flex:1 1 auto;width:auto !important;text-align:center;padding:10px 8px;white-space:nowrap;font-size:calc(12.5px * var(--fs));}
+  .row2 > *{min-width:0;}
+  .row2 input[type=month]{min-width:0;width:100%;}
+  .inline-row .btn-secondary[style*="display:none"]{flex:0 0 0;}
+  .toggle-panel{display:none;margin-top:10px;}
+  .toggle-panel.open{display:block;}
   .section-gap{height:2px;}
   .subtle-btn-row{display:flex;gap:8px;margin-top:6px;}
 
@@ -411,12 +418,12 @@
             <select id="mainYear"></select>
           </div>
         </div>
-        <div class="row2" style="margin-top:8px">
-          <button class="btn-secondary" id="mainBackToTodayBtn" style="width:100%;text-align:center;display:none">↩ Текущий месяц</button>
-          <button class="btn-secondary" id="mainBackToPrevBtn" style="width:100%;text-align:center;display:none">← Прошлый месяц</button>
+        <div class="inline-row" style="margin-top:8px">
+          <button class="btn-secondary" id="mainBackToTodayBtn" style="display:none">↩ Текущий</button>
+          <button class="btn-secondary" id="mainBackToPrevBtn" style="display:none">← Прошлый месяц</button>
+          <button class="btn-secondary" id="mainRangeToggle" data-toggle="mainRangePanel">Произвольный период ▸</button>
         </div>
-        <details class="collapse-block">
-          <summary>Произвольный период</summary>
+        <div class="toggle-panel" id="mainRangePanel">
           <div class="row2" style="margin-bottom:8px;margin-top:10px">
             <div class="field" style="margin-bottom:0">
               <label for="mainRangeCount">Своё количество месяцев</label>
@@ -436,7 +443,7 @@
               <input type="month" id="mainRangeEnd">
             </div>
           </div>
-        </details>
+        </div>
       </div>
 
       <div data-card="kpi" class="card">
@@ -493,12 +500,14 @@
           </div>
         </div>
         <div style="padding:0 6px 10px">
-          <div class="field" style="margin-bottom:0">
-            <label>Показатель</label>
-            <select id="trendMetric"></select>
+          <div class="inline-row" style="align-items:flex-end">
+            <div class="field" style="margin-bottom:0;flex:1 1 140px;min-width:0">
+              <label>Показатель</label>
+              <select id="trendMetric"></select>
+            </div>
+            <button class="btn-secondary" id="trendCompareToggle" data-toggle="trendCompareDetails" style="flex:none">Сравнить с… ▸</button>
           </div>
-          <details class="collapse-block" id="trendCompareDetails">
-            <summary>Сравнить с…</summary>
+          <div class="toggle-panel" id="trendCompareDetails">
             <div class="field" style="margin-bottom:0;margin-top:10px">
               <select id="trendPeriod2"></select>
             </div>
@@ -510,7 +519,7 @@
               <div class="field" style="margin-bottom:0"><label>С</label><input type="month" id="trendCustomStart2"></div>
               <div class="field" style="margin-bottom:0"><label>По</label><input type="month" id="trendCustomEnd2"></div>
             </div>
-          </details>
+          </div>
         </div>
         <div class="legend" id="trendLegend" style="padding:0 6px 6px;display:none"></div>
         <div class="yearchart">
@@ -2416,7 +2425,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.11";
+var APP_VERSION = "1.12";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
@@ -3278,6 +3287,15 @@ if(PWA_OK){
 } else {
   setUpdateStatus("Режим файла: обновления и офлайн-кэш работают в установленной версии (https).");
 }
+
+// ---------- переключатели «Произвольный период» / «Сравнить с…» ----------
+document.querySelectorAll("[data-toggle]").forEach(function(btn){
+  btn.addEventListener("click", function(){
+    var panel = document.getElementById(btn.getAttribute("data-toggle"));
+    var open = panel.classList.toggle("open");
+    btn.textContent = btn.textContent.replace(/\s*[▸▾]$/, "") + (open ? " ▾" : " ▸");
+  });
+});
 
 // ---------- кнопка «Наверх» ----------
 var toTopBtn = document.getElementById("toTopBtn");
