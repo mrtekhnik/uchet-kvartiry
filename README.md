@@ -17,3 +17,10 @@ Settings → Pages → Source: «Deploy from a branch», ветка `main`, па
 ## Важно
 Данные (localStorage) привязаны к адресу. При переходе с файла на https-адрес данные
 не переносятся автоматически: в старой версии «Скачать резервную копию», в новой — «Восстановить из файла».
+
+## Синхронизация телефон ↔ ПК
+Через приватный репозиторий `mrtekhnik/sync` (папка `uchet-kvartiry/index.json`), кнопка ⟳ в шапке.
+Подключение (репозиторий + токен) общее для всех приложений на `mrtekhnik.github.io` — ключ `mrtekhnik.sync`.
+Тесты: `tools/ghmock.py` (имитация GitHub) — см. `tools/sync_test.js`.
+Восстановление из истории: GitHub → `mrtekhnik/sync` → Commits → нужная дата → `uchet-kvartiry/index.json` → скачать →
+Справочники → «Восстановить из файла».

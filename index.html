@@ -289,6 +289,27 @@
   @media (max-width:420px){ .month-row-top .field{flex:1 1 150px !important;} }
   .month-btns .btn-secondary{padding:6px 10px;font-size:calc(12px * var(--fs));white-space:nowrap;}
   .month-row-top .field input{padding:8px 10px;}
+  .sync-btn{position:absolute;right:58px;top:10px;background:rgba(255,255,255,.16);color:#fff;border-radius:10px;font-size:calc(18px * var(--fs));line-height:1;padding:7px 10px;}
+  .sync-btn.spin{animation:spin 1s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .busy-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:80;display:none;align-items:center;justify-content:center;}
+  .busy-bg.show{display:flex;}
+  .busy-box{background:var(--surface);color:var(--ink);border-radius:14px;padding:18px 24px;font-weight:700;font-size:calc(15px * var(--fs));}
+  .msg-toast{position:fixed;left:14px;right:14px;bottom:70px;z-index:70;max-width:452px;margin:0 auto;background:var(--toast-bg);color:#fff;
+    border-radius:var(--radius-sm);padding:11px 14px;font-size:calc(13px * var(--fs));display:none;box-shadow:0 6px 20px rgba(0,0,0,.25);}
+  .conflict-card{background:var(--rem-bg);border-color:var(--rem-line);padding:10px 14px;display:none;}
+  .conflict-card.show{display:block;}
+  .conflict-card .cc-row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:calc(13px * var(--fs));color:var(--accent-ink);}
+  .conflict-card button{background:var(--primary);color:#fff;border-radius:8px;padding:8px 12px;font-weight:700;flex:none;}
+  .set-inp{width:100%;font-size:16px;padding:9px 10px;border-radius:var(--radius-sm);border:1px solid var(--line);background:var(--input-bg);color:var(--ink);margin-bottom:6px;font-family:inherit;}
+  .cf-item{border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:12px;}
+  .cf-title{font-weight:700;margin-bottom:6px;font-size:calc(14px * var(--fs));}
+  .cf-cols{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .cf-col{background:var(--bg);border-radius:10px;padding:8px;font-size:calc(12px * var(--fs));line-height:1.45;}
+  .cf-col h4{margin:0 0 4px;font-size:calc(12px * var(--fs));}
+  .cf-col .cf-time{color:var(--muted);font-size:calc(11px * var(--fs));margin-bottom:4px;}
+  .cf-col button{width:100%;margin-top:8px;padding:9px 4px;border-radius:8px;background:var(--primary);color:#fff;font-weight:700;font-size:calc(12.5px * var(--fs));}
+  .cf-diff{font-weight:700;color:var(--danger);}
   .pref-hidden{display:none !important;}
   .update-banner{position:fixed;left:14px;right:14px;bottom:70px;z-index:55;max-width:452px;margin:0 auto;background:var(--primary);color:#fff;
     border-radius:var(--radius-sm);padding:10px 8px 10px 14px;display:none;align-items:center;justify-content:space-between;gap:10px;
@@ -360,6 +381,7 @@
   <header class="topbar">
     <div class="brand">🏠 Учёт квартиры</div>
     <h1 id="topbarTitle">Главная</h1>
+    <button class="sync-btn" id="syncBtn" title="Синхронизировать" aria-label="Синхронизировать">⟳</button>
     <button class="gear-btn" id="gearBtn" title="Вид и настройки" aria-label="Вид и настройки">⚙</button>
   </header>
 
@@ -367,6 +389,10 @@
 
     <!-- ===================== ГЛАВНАЯ ===================== -->
     <section class="tab-panel active" id="tab-main">
+
+      <div class="card conflict-card" id="conflictCardMain">
+        <div class="cc-row"><span>⚠ После синхронизации есть данные, которые требуют решения: <b class="cc-n"></b></span><button class="cc-open">Решить</button></div>
+      </div>
 
       <div data-card="reminders" class="card reminder-card" id="reminderCard" style="display:none">
         <div id="reminderList"></div>
@@ -508,6 +534,10 @@
 
     <!-- ===================== ВВОД ДАННЫХ ===================== -->
     <section class="tab-panel" id="tab-input">
+
+      <div class="card conflict-card" id="conflictCardInput">
+        <div class="cc-row"><span>⚠ После синхронизации есть данные, которые требуют решения: <b class="cc-n"></b></span><button class="cc-open">Решить</button></div>
+      </div>
 
       <div class="card compact-card">
         <div class="month-row-top">
@@ -737,6 +767,7 @@
       </div>
 
       <div class="app-footer" id="appFooter"></div>
+      <button class="btn-secondary" id="syncNowBtn" style="width:100%;text-align:center;margin-bottom:8px">⟳ Синхронизировать</button>
       <button class="btn-secondary" id="checkUpdateBtn" style="width:100%;text-align:center">🔄 Проверить обновление</button>
       <div class="hint" id="updateStatus" style="text-align:center;margin:6px 0 14px"></div>
 
@@ -763,6 +794,18 @@
     </button>
   </nav>
 
+  <div class="busy-bg" id="busyBg"><div class="busy-box" id="busyTxt">Синхронизация…</div></div>
+  <div class="msg-toast" id="msgToast"></div>
+
+  <div class="sheet-bg" id="conflictSheetBg">
+    <div class="sheet">
+      <h3>Требует решения</h3>
+      <div class="hint" style="margin-bottom:10px">Эти данные изменены на двух устройствах. Пока вы не выберете, в итогах учитывается версия с этого устройства, а расход за такие месяцы не считается. Выбранная версия уйдёт в репозиторий при следующей синхронизации.</div>
+      <div id="conflictList"></div>
+      <button class="btn-secondary" id="conflictLater" style="width:100%;text-align:center">Решу позже</button>
+    </div>
+  </div>
+
   <div class="sheet-bg" id="settingsSheetBg">
     <div class="sheet">
       <h3>Вид и настройки</h3>
@@ -774,6 +817,14 @@
       <div class="bg-grid" id="bgGrid"></div>
       <div class="set-sec">Размер шрифта</div>
       <div class="font-seg" id="fontSeg"></div>
+      <div class="set-sec">Синхронизация через GitHub</div>
+      <div class="hint" style="margin-bottom:8px">Телефон и компьютер обмениваются данными через ваш <b>приватный</b> репозиторий по кнопке ⟳. Подключение общее для всех приложений на mrtekhnik.github.io: если оно уже настроено в другом приложении, здесь ничего вводить не нужно.</div>
+      <div class="hint">Репозиторий (имя/репозиторий)</div>
+      <input class="set-inp" id="syRepo" placeholder="mrtekhnik/sync" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <div class="hint">Токен доступа</div>
+      <input class="set-inp" id="syTok" type="password" placeholder="github_pat_…" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <div class="row2"><button class="btn-primary" id="sySave" style="padding:10px">Сохранить и проверить</button><button class="btn-secondary" id="syOff" style="text-align:center">Отключить</button></div>
+      <div class="hint" id="sySt" style="margin-top:6px"></div>
       <div class="hint" style="margin-top:8px">Настройки вида хранятся в этом браузере и не входят в резервную копию данных.</div>
       <button class="btn-primary" id="settingsClose" style="margin-top:12px">Готово</button>
     </div>
@@ -944,7 +995,76 @@ function load(){
 function persist(d){
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }catch(e){}
 }
-function save(){ persist(data); }
+// ============================================================
+// ОТСЛЕЖИВАНИЕ ИЗМЕНЕНИЙ ДЛЯ СИНХРОНИЗАЦИИ
+// Любая запись данных идёт через save(): здесь обновляется время изменения
+// каждой записи (data.mods) и ведётся журнал окончательных удалений.
+// ============================================================
+var SYNC_STATE_KEY = "utilityTrackerSync_v1";
+var MF = ["gasReading","gasPayment","deliveryPayment","elReading","elPayment","waterReading","waterPayment","rent"];
+function loadSyncState(){
+  var s = {};
+  try{ s = JSON.parse(localStorage.getItem(SYNC_STATE_KEY)||"{}") || {}; }catch(e){ s = {}; }
+  s.known = s.known||{}; s.purged = s.purged||{}; s.pending = s.pending||{}; s.dupOk = s.dupOk||{}; s.lastSync = s.lastSync||0;
+  return s;
+}
+var syncState = loadSyncState();
+function saveSyncState(){ try{ localStorage.setItem(SYNC_STATE_KEY, JSON.stringify(syncState)); }catch(e){} }
+function n8(v){ return (v==null||v==="") ? "" : +v; }
+function normD(t, d){
+  d = d||{};
+  if(t==="m"){ var o = {}; MF.forEach(function(f){ o[f] = n8(d[f]); }); return o; }
+  if(t==="x") return {date:d.date||"", category:d.category||"", amount:+d.amount||0, note:d.note||""};
+  if(t==="v") return {date:d.date||"", category:d.category||"", type:d.type||"", description:d.description||"", note:d.note||""};
+  return {label:d.label||"", value:d.value||"", o:+d.o||0};
+}
+function entriesOf(dt){
+  var out = {};
+  Object.keys(dt.monthly||{}).forEach(function(k){ out["m:"+k] = normD("m", dt.monthly[k]); });
+  (dt.extra||[]).forEach(function(e){ out["x:"+e.id] = normD("x", e); });
+  (dt.events||[]).forEach(function(e){ out["v:"+e.id] = normD("v", e); });
+  (dt.info||[]).forEach(function(r,i){ out["i:"+r.id] = normD("i", {label:r.label, value:r.value, o:i}); });
+  return out;
+}
+var prevSnap = {}, prevCats = {categories:[], eventCategories:[]};
+function snapStrings(dt){
+  var e = entriesOf(dt), s = {};
+  Object.keys(e).forEach(function(id){ s[id] = JSON.stringify(e[id]); });
+  return s;
+}
+function catsOf(dt){ return {categories:(dt.categories||[]).slice(), eventCategories:(dt.eventCategories||[]).slice()}; }
+function initTrack(){
+  data.mods = data.mods||{}; data.tomb = data.tomb||{};
+  prevSnap = snapStrings(data); prevCats = catsOf(data);
+  Object.keys(prevSnap).forEach(function(id){ if(data.mods[id]==null) data.mods[id] = 0; });
+  [["categories","c:"],["eventCategories","e:"]].forEach(function(p){
+    (data[p[0]]||[]).forEach(function(n){ if(data.mods[p[1]+n]==null) data.mods[p[1]+n] = 0; });
+  });
+  persist(data);
+}
+function trackChanges(){
+  var d = data; d.mods = d.mods||{}; d.tomb = d.tomb||{};
+  var cur = snapStrings(d), now = Date.now(), changedState = false;
+  Object.keys(cur).forEach(function(id){
+    if(prevSnap[id]!==cur[id] || d.mods[id]==null) d.mods[id] = now;
+    if(!(id in prevSnap) && syncState.purged[id]!==undefined){ delete syncState.purged[id]; changedState = true; } // запись вернули («Отменить»)
+  });
+  Object.keys(prevSnap).forEach(function(id){
+    if(!(id in cur)){
+      delete d.mods[id];
+      if(syncState.known[id]!==undefined){ syncState.purged[id] = now; changedState = true; }
+    }
+  });
+  [["categories","c:"],["eventCategories","e:"]].forEach(function(p){
+    var c = d[p[0]]||[], pv = prevCats[p[0]]||[];
+    c.forEach(function(n){ if(pv.indexOf(n)<0 || d.mods[p[1]+n]==null){ d.mods[p[1]+n] = now; delete d.tomb[p[1]+n]; } });
+    pv.forEach(function(n){ if(c.indexOf(n)<0){ d.tomb[p[1]+n] = now; delete d.mods[p[1]+n]; } });
+  });
+  prevSnap = cur; prevCats = catsOf(d);
+  if(changedState) saveSyncState();
+}
+function save(){ trackChanges(); persist(data); }
+initTrack();
 
 // ---------- helpers ----------
 function monthKeys(){ return Object.keys(data.monthly).sort(); }
@@ -968,7 +1088,9 @@ function hasAnyData(m){
   if(!m) return false;
   return FIELD_IDS.some(function(f){ return m[f]!=null && m[f]!==""; });
 }
+function inConflict(key){ return !!(syncState.pending["m:"+key]); }
 function consumption(key, field){
+  if(inConflict(key) || inConflict(nextMonthKey(key))) return null; // дубль месяца не решён — расход не считаем
   var cur = data.monthly[key];
   var prev = data.monthly[prevMonthKey(key)];
   if(!cur || !prev) return null;
@@ -1577,6 +1699,7 @@ function updateInputHints(key){
 
     var hintEl = document.getElementById("hint_"+kind);
     hintEl.classList.remove("hint-warn");
+    if(inConflict(key)){ hintEl.textContent = "⚠ Требует решения (синхронизация)"; hintEl.classList.add("hint-warn"); return; }
     if(curRaw!=="" && !isNaN(curVal) && hasPrev){
       var diff = curVal - prevVal;
       if(diff<0){
@@ -2285,7 +2408,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.9";
+var APP_VERSION = "1.10";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
@@ -2296,7 +2419,8 @@ function renderAppFooter(){
   document.getElementById("appFooter").innerHTML =
     "Версия программы: <b>"+APP_VERSION+"</b><br>"+
     "Последний экспорт: <b>"+fmtDateTime(localStorage.getItem(LAST_BACKUP_KEY))+"</b><br>"+
-    "Последний импорт: <b>"+fmtDateTime(localStorage.getItem(LAST_IMPORT_KEY))+"</b>";
+    "Последний импорт: <b>"+fmtDateTime(localStorage.getItem(LAST_IMPORT_KEY))+"</b><br>"+
+    "Синхронизация: <b>"+syncStatusText()+"</b>";
 }
 function pad2(n){ return n<10? "0"+n : ""+n; }
 function backupFileName(){
@@ -2388,6 +2512,33 @@ document.getElementById("exportExtraCsvBtn").addEventListener("click", function(
   downloadCSV("dop-rashody.csv", headers, rows);
 });
 
+function dataFromSyncFile(R){
+  if(!R.items || typeof R.items!=="object") throw new Error("bad shape");
+  var d = {monthly:{}, extra:[], events:[], info:[], categories:[], eventCategories:[], mods:{}, tomb:{}};
+  var infoRows = [];
+  Object.keys(R.items).forEach(function(id){
+    var it = R.items[id];
+    if(!it || typeof it.d!=="object" || id.charAt(1)!==":") throw new Error("bad shape");
+    var t = id.charAt(0), key = id.slice(2), x = normD(t, it.d);
+    if(t==="m"){ if(!/^\d{4}-\d{2}$/.test(key)) throw new Error("bad shape"); d.monthly[key] = x; }
+    else if(t==="x") d.extra.push({id:key, date:x.date, category:x.category, amount:x.amount, note:x.note});
+    else if(t==="v") d.events.push({id:key, date:x.date, category:x.category, type:x.type, description:x.description, note:x.note});
+    else if(t==="i") infoRows.push({o:x.o, r:{id:key, label:x.label, value:x.value}});
+    else throw new Error("bad shape");
+    d.mods[id] = +it.m||0;
+  });
+  d.info = infoRows.sort(function(a,b){ return a.o-b.o; }).map(function(z){ return z.r; });
+  [["cats","categories","c:"],["evcats","eventCategories","e:"]].forEach(function(p){
+    var l = R[p[0]] || {items:{},tomb:{}};
+    Object.keys(l.items||{}).forEach(function(n){
+      var tb = (l.tomb||{})[n];
+      if(!(tb!==undefined && tb>=l.items[n])){ d[p[1]].push(n); d.mods[p[2]+n] = l.items[n]; }
+    });
+    Object.keys(l.tomb||{}).forEach(function(n){ d.tomb[p[2]+n] = l.tomb[n]; });
+  });
+  return d;
+}
+
 document.getElementById("backupImportInput").addEventListener("change", function(e){
   var file = e.target.files[0];
   if(!file) return;
@@ -2396,10 +2547,19 @@ document.getElementById("backupImportInput").addEventListener("change", function
   reader.onload = function(){
     try{
       var parsed = JSON.parse(reader.result);
+      var fromSync = false;
+      if(parsed && typeof parsed==="object" && !parsed.monthly && parsed.items && typeof parsed.items==="object"){
+        parsed = dataFromSyncFile(parsed);   // файл синхронизации из истории GitHub
+        fromSync = true;
+      }
       if(!parsed || typeof parsed!=="object" || !parsed.monthly){
         throw new Error("bad shape");
       }
-      if(!confirm("Заменить все текущие данные содержимым файла? Перед заменой текущие данные автоматически сохранятся в файл резервной копии.")){
+      var nM = Object.keys(parsed.monthly).length, nX = (parsed.extra||[]).length, nV = (parsed.events||[]).length;
+      var newest = 0; Object.keys(parsed.mods||{}).forEach(function(k){ if(parsed.mods[k]>newest) newest = parsed.mods[k]; });
+      var what = "В файле"+(fromSync?" (данные синхронизации)":"")+": месяцев "+nM+", доп. расходов "+nX+", событий "+nV+
+        (newest ? ", последнее изменение "+fmtDateTime(new Date(newest).toISOString()) : "")+".\n\n";
+      if(!confirm(what+"Заменить все текущие данные содержимым файла? Перед заменой текущие данные автоматически сохранятся в файл резервной копии. При следующей синхронизации эти данные станут основными.")){
         e.target.value = "";
         return;
       }
@@ -2425,6 +2585,7 @@ document.getElementById("backupImportInput").addEventListener("change", function
       renderInputTab();
       renderRefTab();
       renderExtraTab();
+      renderConflictBadges();
     }catch(err){
       st.style.color = "var(--danger)";
       st.textContent = "Не удалось прочитать файл — это не резервная копия этого приложения.";
@@ -2547,7 +2708,7 @@ function isPresetFor(themeKey, color){
   return presets.some(function(b){ return b[0]===color; });
 }
 function rerenderCharts(){ try{ renderMain(); }catch(e){} }
-function openSettings(){ renderSettings(); document.getElementById("settingsSheetBg").classList.add("show"); }
+function openSettings(){ renderSettings(); renderSyncSettings(); document.getElementById("settingsSheetBg").classList.add("show"); }
 function closeSettings(){ document.getElementById("settingsSheetBg").classList.remove("show"); }
 document.getElementById("gearBtn").addEventListener("click", openSettings);
 document.getElementById("openSettingsBtn").addEventListener("click", openSettings);
@@ -2645,6 +2806,379 @@ document.getElementById("msSave").addEventListener("click", function(){
   commitMonth(key, rec, refresh);
   closeMonthSheet();
 });
+
+// ============================================================
+// СИНХРОНИЗАЦИЯ ЧЕРЕЗ GITHUB (приватный репозиторий, Git Data API)
+// ============================================================
+var SYNC_KEY = "mrtekhnik.sync", SYNC_DIR = "uchet-kvartiry";
+function syncCfg(){ try{ var v = JSON.parse(localStorage.getItem(SYNC_KEY)||"null"); return v && v.repo && v.token ? v : null; }catch(e){ return null; } }
+function setSyncCfg(v){ try{ if(v) localStorage.setItem(SYNC_KEY, JSON.stringify(v)); else localStorage.removeItem(SYNC_KEY); }catch(e){} }
+function apiBase(){ try{ return localStorage.getItem("mrtekhnik.sync.api") || "https://api.github.com"; }catch(e){ return "https://api.github.com"; } }
+async function gh(cfg, path, opt){
+  opt = opt||{};
+  var h = {Authorization:"Bearer "+cfg.token, Accept: opt.raw ? "application/vnd.github.raw" : "application/vnd.github+json"};
+  if(opt.body) h["Content-Type"] = "application/json";
+  var r = await fetch(apiBase()+"/repos/"+cfg.repo+path, {method:opt.method||"GET", cache:"no-store", headers:h, body:opt.body?JSON.stringify(opt.body):undefined});
+  if(opt.allow404 && (r.status===404 || r.status===409)) return null;
+  if(!r.ok){
+    var e = new Error("HTTP "+r.status); e.status = r.status;
+    try{ e.msg = (await r.json()).message; }catch(_){}
+    throw e;
+  }
+  return opt.raw ? r.text() : r.json();
+}
+function syncErrText(e){
+  if(e && e.code==="empty") return "Репозиторий пустой. Создайте его с галочкой «Add a README file».";
+  if(e && e.code==="public") return "Репозиторий публичный. Для синхронизации нужен приватный — данные не должны быть доступны всем.";
+  if(e && e.code==="bad") return e.message;
+  if(e && e.status===401) return "GitHub не принял токен: проверьте его или выпустите новый (возможно, истёк срок действия).";
+  if(e && e.status===403) return "У токена нет прав на запись. При создании токена нужно право Contents: Read and write.";
+  if(e && e.status===404) return "Репозиторий не найден. Проверьте имя (вид: имя/репозиторий) и что токен выдан именно для этого репозитория.";
+  if(e instanceof TypeError) return "Нет связи с GitHub. Проверьте интернет.";
+  return "Ошибка: " + ((e && (e.msg||e.message)) || e);
+}
+function devName(){ return /Android/i.test(navigator.userAgent) ? "Android" : /Windows/i.test(navigator.userAgent) ? "Windows" : "устройство"; }
+function utf8b64(str){
+  var bytes = new TextEncoder().encode(str), bin = "";
+  for(var i=0;i<bytes.length;i+=8192) bin += String.fromCharCode.apply(null, bytes.subarray(i,i+8192));
+  return btoa(bin);
+}
+function newId(p){ return p + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function eqD(a,b){ return JSON.stringify(a)===JSON.stringify(b); }
+
+// ----- применение записи к набору данных nd -----
+function applyItem(nd, id, d, m){
+  var t = id.charAt(0), key = id.slice(2);
+  d = normD(t, d);
+  nd.mods = nd.mods||{};
+  if(t==="m"){ nd.monthly[key] = d; }
+  else if(t==="x"){
+    var rec = {id:key, date:d.date, category:d.category, amount:d.amount, note:d.note};
+    var i = nd.extra.findIndex(function(e){ return e.id===key; });
+    if(i<0) nd.extra.push(rec); else nd.extra[i] = rec;
+  } else if(t==="v"){
+    var rv = {id:key, date:d.date, category:d.category, type:d.type, description:d.description, note:d.note};
+    var j = nd.events.findIndex(function(e){ return e.id===key; });
+    if(j<0) nd.events.push(rv); else nd.events[j] = rv;
+  } else if(t==="i"){
+    var ri = {id:key, label:d.label, value:d.value};
+    var k = nd.info.findIndex(function(e){ return e.id===key; });
+    if(k<0) nd.info.push(ri); else nd.info[k] = ri;
+    nd._infoOrder = nd._infoOrder||{}; nd._infoOrder[key] = d.o;
+  }
+  nd.mods[id] = m;
+}
+function removeItem(nd, id){
+  var t = id.charAt(0), key = id.slice(2);
+  if(t==="m") delete nd.monthly[key];
+  else if(t==="x") nd.extra = nd.extra.filter(function(e){ return e.id!==key; });
+  else if(t==="v") nd.events = nd.events.filter(function(e){ return e.id!==key; });
+  else if(t==="i") nd.info = nd.info.filter(function(e){ return e.id!==key; });
+  if(nd.mods) delete nd.mods[id];
+}
+function localItems(dt){
+  var e = entriesOf(dt), out = {};
+  Object.keys(e).forEach(function(id){ out[id] = {d:e[id], m:(dt.mods&&dt.mods[id])||0}; });
+  return out;
+}
+// ----- объединение списков категорий: по времени, удалённые — «надгробиями» -----
+function mergeList(names, prefix, Rl, nd, used){
+  var items = {}, tomb = {};
+  names.forEach(function(n){ items[n] = (nd.mods[prefix+n]||0); });
+  Object.keys(Rl.items||{}).forEach(function(n){ items[n] = (n in items) ? Math.max(items[n], Rl.items[n]) : Rl.items[n]; });
+  Object.keys(Rl.tomb||{}).forEach(function(n){ tomb[n] = Rl.tomb[n]; });
+  Object.keys(nd.tomb||{}).forEach(function(k){ if(k.indexOf(prefix)===0){ var n = k.slice(prefix.length); tomb[n] = Math.max(tomb[n]||0, nd.tomb[k]); } });
+  var now = Date.now();
+  used.forEach(function(n){ if(!(n in items) || (tomb[n]!==undefined && tomb[n]>=items[n])){ items[n] = now; } });
+  var alive = function(n){ return !(tomb[n]!==undefined && tomb[n]>=items[n]); };
+  var out = names.filter(alive);
+  used.forEach(function(n){ if(out.indexOf(n)<0 && alive(n)) out.push(n); });
+  Object.keys(items).sort().forEach(function(n){ if(out.indexOf(n)<0 && alive(n)) out.push(n); });
+  var alItems = {}; out.forEach(function(n){ alItems[n] = items[n]; });
+  return {names:out, items:alItems, tomb:tomb};
+}
+
+var syncing = false;
+function busy(on, txt){
+  document.getElementById("busyBg").classList.toggle("show", !!on);
+  if(txt) document.getElementById("busyTxt").textContent = txt;
+  document.getElementById("syncBtn").classList.toggle("spin", !!on);
+}
+var msgTimer = null;
+function toastMsg(t){
+  var el = document.getElementById("msgToast"); el.textContent = t; el.style.display = "block";
+  clearTimeout(msgTimer); msgTimer = setTimeout(function(){ el.style.display = "none"; }, 4200);
+}
+function syncStatusText(){
+  if(!syncCfg()) return "не настроена";
+  return syncState.lastSync ? fmtDateTime(new Date(syncState.lastSync).toISOString()) : "ещё не было";
+}
+function refreshAllViews(){
+  try{ refreshYearOptions(); }catch(e){}
+  initMainSelectors(); initTrendSelectors();
+  renderMain(); renderInputTab(); renderRefTab(); renderExtraTab();
+  renderLastBackupHint(); renderConflictBadges();
+}
+
+async function syncNow(){
+  var cfg = syncCfg();
+  if(!cfg){ toastMsg("Сначала подключите GitHub: ⚙ → Синхронизация"); openSettings(); return; }
+  if(syncing) return;
+  syncing = true; busy(true, "Синхронизация…");
+  try{
+    var res;
+    for(var a=0;a<3;a++){
+      try{ res = await syncOnce(cfg); break; }
+      catch(e){ if((e.status===422 || e.status===409) && a<2) continue; throw e; }
+    }
+    busy(false);
+    refreshAllViews();
+    var parts = [];
+    if(res.up) parts.push("отправлено "+res.up);
+    if(res.down) parts.push("получено "+res.down);
+    if(res.del) parts.push("удалено "+res.del);
+    if(res.lists) parts.push("обновлены категории");
+    if(res.conf) parts.push("копий версий: "+res.conf);
+    var np = Object.keys(syncState.pending).length;
+    if(np){
+      toastMsg((parts.length?"Синхронизировано: "+parts.join(", ")+". ":"")+"Есть данные, требующие решения: "+np);
+      openConflicts();
+    } else {
+      toastMsg(parts.length ? "Синхронизировано: "+parts.join(", ") : "Всё уже синхронизировано");
+    }
+  }catch(e){
+    busy(false);
+    alert("Синхронизация не удалась.\n\n"+syncErrText(e)+"\n\nДанные на устройстве не изменены.");
+  }finally{ syncing = false; busy(false); }
+}
+
+async function syncOnce(cfg){
+  var ref = await gh(cfg, "/git/ref/heads/main", {allow404:true});
+  if(!ref){ var e0 = new Error("empty"); e0.code = "empty"; throw e0; }
+  var head = ref.object.sha, commit = await gh(cfg, "/git/commits/"+head);
+  var idxTxt = await gh(cfg, "/contents/"+SYNC_DIR+"/index.json?ref="+head, {raw:true, allow404:true});
+  var R = {};
+  if(idxTxt){ try{ R = JSON.parse(idxTxt) || {}; }catch(_){ var eb = new Error("Повреждён файл синхронизации в репозитории (index.json)."); eb.code = "bad"; throw eb; } }
+  R.v = 1; R.app = "uchet-kvartiry"; R.items = R.items||{}; R.purged = R.purged||{};
+  R.cats = R.cats||{items:{},tomb:{}}; R.evcats = R.evcats||{items:{},tomb:{}};
+  var before = JSON.stringify(R);
+
+  var nd = JSON.parse(JSON.stringify(data)); nd.mods = nd.mods||{}; nd.tomb = nd.tomb||{};
+  var L = localItems(data), known = Object.assign({}, syncState.known), purgedL = Object.assign({}, syncState.purged);
+  var pending = JSON.parse(JSON.stringify(syncState.pending)), dupOk = Object.assign({}, syncState.dupOk);
+  var up=0, down=0, del=0, conf=0;
+  var prog = function(){ busy(true, "Синхронизация… "+(up+down)); };
+
+  var skip = {};
+  Object.keys(pending).forEach(function(k){ skip[k] = 1; if(pending[k].localId) skip[pending[k].localId] = 1; });
+
+  // «дубли по смыслу» среди доп. расходов: одинаковая запись внесена на двух устройствах как новая
+  var newL = Object.keys(L).filter(function(id){ return id.charAt(0)==="x" && !R.items[id] && known[id]===undefined && !purgedL[id] && !skip[id] && !dupOk[id]; });
+  var usedL = {};
+  Object.keys(R.items).filter(function(id){ return id.charAt(0)==="x" && !L[id] && known[id]===undefined && !R.purged[id] && !skip[id] && !dupOk[id]; }).forEach(function(rid){
+    var rd = normD("x", R.items[rid].d);
+    var lid = newL.find(function(l){ return !usedL[l] && eqD(L[l].d, rd); });
+    if(lid){ usedL[lid] = 1; pending[rid] = {type:"dup", id:rid, localId:lid, d:rd, rm:R.items[rid].m}; skip[rid] = 1; skip[lid] = 1; }
+  });
+
+  var ids = {};
+  [L, R.items, purgedL, R.purged].forEach(function(o){ Object.keys(o).forEach(function(k){ ids[k] = 1; }); });
+  Object.keys(ids).forEach(function(id){
+    if(skip[id]) return;
+    var l = L[id], r = R.items[id], b = known[id], t = id.charAt(0);
+    if(purgedL[id] && !l){
+      if(r){ delete R.items[id]; del++; }
+      R.purged[id] = Math.max(R.purged[id]||0, purgedL[id]); delete known[id]; return;
+    }
+    var pushL = function(){ R.items[id] = {t:t, m:l.m, d:l.d}; delete R.purged[id]; known[id] = l.m; up++; prog(); };
+    var pullR = function(){ applyItem(nd, id, r.d, r.m); known[id] = r.m; down++; prog(); };
+    if(!r){
+      if(!l) return;
+      if(R.purged[id] && b!==undefined && l.m===b){ removeItem(nd, id); del++; delete known[id]; }
+      else pushL();
+      return;
+    }
+    if(!l){ if(R.purged[id] && !R.items[id]) return; pullR(); return; }
+    var rd2 = normD(t, r.d);
+    if(eqD(l.d, rd2)){ known[id] = r.m; nd.mods[id] = r.m; return; }
+    var lc = l.m!==b, rc = r.m!==b;
+    if(lc && !rc){ pushL(); return; }
+    if(rc && !lc){ pullR(); return; }
+    // изменено на обоих устройствах
+    if(t==="m" || t==="x"){
+      pending[id] = {type:"mod", id:id, remote:rd2, rm:r.m};   // сумма/показание: решает пользователь
+      known[id] = r.m;
+    } else {
+      // события и информация: основной остаётся более новая версия, другая — копией
+      var cid = t+":"+newId(t==="v"?"ev":"i"), now = Date.now();
+      var rcopy = Object.assign({}, rd2), lcopy = Object.assign({}, l.d);
+      var lab = t==="v" ? "description" : "label";
+      if(l.m>=r.m){
+        pushL();
+        rcopy[lab] = (rcopy[lab]||"") + " (другая версия)";
+        applyItem(nd, cid, rcopy, now); R.items[cid] = {t:t, m:now, d:normD(t,rcopy)}; known[cid] = now;
+      } else {
+        lcopy[lab] = (lcopy[lab]||"") + " (другая версия)";
+        applyItem(nd, cid, lcopy, now); R.items[cid] = {t:t, m:now, d:normD(t,lcopy)}; known[cid] = now;
+        pullR();
+      }
+      conf++;
+    }
+  });
+
+  // порядок строк «Информация по квартире»
+  if(nd._infoOrder){
+    var ord = nd._infoOrder;
+    nd.info = nd.info.map(function(r,i){ return {r:r, k:(r.id in ord) ? ord[r.id] : i}; })
+      .sort(function(a,b2){ return a.k-b2.k; }).map(function(x){ return x.r; });
+    delete nd._infoOrder;
+  }
+  // списки категорий
+  var usedC = [], usedE = [];   // удалённая категория остаётся только в старых записях — как и раньше
+  var mc = mergeList(nd.categories||[], "c:", R.cats, nd, usedC);
+  var me = mergeList(nd.eventCategories||[], "e:", R.evcats, nd, usedE);
+  var listsChanged = JSON.stringify(mc.names)!==JSON.stringify(nd.categories) || JSON.stringify(me.names)!==JSON.stringify(nd.eventCategories);
+  nd.categories = mc.names; nd.eventCategories = me.names;
+  [["c:",mc],["e:",me]].forEach(function(p){
+    Object.keys(nd.mods).forEach(function(k){ if(k.indexOf(p[0])===0 && !(k.slice(2) in p[1].items)) delete nd.mods[k]; });
+    Object.keys(p[1].items).forEach(function(n){ nd.mods[p[0]+n] = p[1].items[n]; });
+    Object.keys(p[1].tomb).forEach(function(n){ nd.tomb[p[0]+n] = p[1].tomb[n]; });
+  });
+  R.cats = {items:mc.items, tomb:mc.tomb}; R.evcats = {items:me.items, tomb:me.tomb};
+
+  var after = JSON.stringify(R);
+  if(after!==before){
+    var blob = await gh(cfg, "/git/blobs", {method:"POST", body:{content:utf8b64(after), encoding:"base64"}});
+    var tree = await gh(cfg, "/git/trees", {method:"POST", body:{base_tree:commit.tree.sha, tree:[{path:SYNC_DIR+"/index.json", mode:"100644", type:"blob", sha:blob.sha}]}});
+    var c = await gh(cfg, "/git/commits", {method:"POST", body:{message:"Учёт квартиры: синхронизация ("+devName()+")", tree:tree.sha, parents:[head]}});
+    await gh(cfg, "/git/refs/heads/main", {method:"PATCH", body:{sha:c.sha, force:false}});
+  }
+  // применяем полученное только после успешного обновления ветки
+  data = migrateInfo(nd);
+  persist(data);
+  prevSnap = snapStrings(data); prevCats = catsOf(data);
+  syncState = {known:known, purged:{}, pending:pending, dupOk:dupOk, lastSync:Date.now()};
+  saveSyncState();
+  return {up:up, down:down, del:del, conf:conf, lists:listsChanged};
+}
+
+// ----- окно решения конфликтов -----
+function fmtMoney(v){ return v==="" || v==null ? "—" : fmtNum(v); }
+function monthDesc(key, d, mtime){
+  var rows = [["Газ, показание", d.gasReading],["Газ, оплата", d.gasPayment],["Доставка газа", d.deliveryPayment],["Свет, показание", d.elReading],
+    ["Свет, оплата", d.elPayment],["Вода, показание", d.waterReading],["Вода, оплата", d.waterPayment],["Квартплата", d.rent]];
+  return rows;
+}
+function renderConflictBadges(){
+  var n = Object.keys(syncState.pending).length;
+  ["conflictCardMain","conflictCardInput"].forEach(function(id){
+    var c = document.getElementById(id);
+    c.classList.toggle("show", n>0);
+    c.querySelector(".cc-n").textContent = n;
+    c.querySelector(".cc-open").onclick = openConflicts;
+  });
+}
+function escH(t){ return String(t==null?"":t).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+function openConflicts(){
+  var ids = Object.keys(syncState.pending);
+  var box = document.getElementById("conflictList");
+  if(!ids.length){ document.getElementById("conflictSheetBg").classList.remove("show"); renderConflictBadges(); return; }
+  box.innerHTML = ids.map(function(id){
+    var p = syncState.pending[id];
+    if(p.type==="dup"){
+      var d = p.d;
+      return '<div class="cf-item"><div class="cf-title">Похоже на одну и ту же запись</div>'+
+        '<div class="cf-col" style="margin-bottom:8px">Доп. расход: '+escH(d.date)+', '+escH(d.category)+', <b>'+fmtNum(d.amount)+' грн</b>'+(d.note?', '+escH(d.note):'')+
+        '<br>Внесена на этом устройстве и на другом отдельно. Пока не решено, в итогах она учитывается один раз.</div>'+
+        '<div class="cf-cols"><button class="btn-primary" data-cf="'+escH(id)+'" data-act="one" style="padding:9px 4px;font-size:13px">Это одна запись</button>'+
+        '<button class="btn-secondary" data-cf="'+escH(id)+'" data-act="two" style="padding:9px 4px;font-size:13px;text-align:center">Это две разные</button></div></div>';
+    }
+    var t = id.charAt(0), key = id.slice(2), ld = normD(t, localItems(data)[id] ? localItems(data)[id].d : {}), lm = (data.mods&&data.mods[id])||0;
+    var title, rows;
+    if(t==="m"){
+      title = "Месяц "+key+" внесён на двух устройствах по-разному";
+      rows = [["Газ, показание","gasReading"],["Газ, оплата","gasPayment"],["Доставка газа","deliveryPayment"],["Свет, показание","elReading"],["Свет, оплата","elPayment"],["Вода, показание","waterReading"],["Вода, оплата","waterPayment"],["Квартплата","rent"]];
+    } else {
+      title = "Доп. расход изменён на двух устройствах";
+      rows = [["Дата","date"],["Категория","category"],["Сумма","amount"],["Примечание","note"]];
+    }
+    var col = function(name, d, tm, act, otherD){
+      return '<div class="cf-col"><h4>'+name+'</h4><div class="cf-time">изменено '+(tm?fmtDateTime(new Date(tm).toISOString()):"ранее")+'</div>'+
+        rows.map(function(rw){
+          var v = d[rw[1]], diff = String(v)!==String(otherD[rw[1]]);
+          return '<div>'+rw[0]+': <span'+(diff?' class="cf-diff"':'')+'>'+escH(v===""||v==null?"—":v)+'</span></div>';
+        }).join("")+
+        (t==="m" ? '<div>Итого оплат: <b>'+fmtNum(["gasPayment","deliveryPayment","elPayment","waterPayment","rent"].reduce(function(s,f){return s+(+d[f]||0);},0))+' грн</b></div>' : '')+
+        '<button data-cf="'+escH(id)+'" data-act="'+act+'">Оставить эту</button></div>';
+    };
+    return '<div class="cf-item"><div class="cf-title">'+escH(title)+'</div><div class="cf-cols">'+
+      col("Это устройство", ld, lm, "local", p.remote)+col("GitHub (другое)", p.remote, p.rm, "remote", ld)+'</div></div>';
+  }).join("");
+  box.querySelectorAll("button[data-cf]").forEach(function(b){
+    b.addEventListener("click", function(){ resolveConflict(b.getAttribute("data-cf"), b.getAttribute("data-act")); });
+  });
+  document.getElementById("conflictSheetBg").classList.add("show");
+  renderConflictBadges();
+}
+function resolveConflict(id, act){
+  var p = syncState.pending[id]; if(!p) return;
+  if(p.type==="dup"){
+    if(act==="one") data.extra = data.extra.filter(function(e){ return "x:"+e.id!==p.localId; });
+    else { syncState.dupOk[p.id] = 1; syncState.dupOk[p.localId] = 1; }
+    delete syncState.pending[id]; saveSyncState();
+    if(act==="one") save();
+  } else if(act==="remote"){
+    applyItem(data, id, p.remote, p.rm);
+    delete syncState.pending[id]; saveSyncState();
+    save();
+  } else {
+    data.mods[id] = Date.now(); persist(data);
+    delete syncState.pending[id]; saveSyncState();
+  }
+  prevSnap = snapStrings(data); prevCats = catsOf(data);
+  refreshAllViews();
+  openConflicts();
+  toastMsg("Выбор сохранён. Он уйдёт в репозиторий при следующей синхронизации.");
+}
+document.getElementById("conflictLater").addEventListener("click", function(){ document.getElementById("conflictSheetBg").classList.remove("show"); });
+
+// ----- настройки подключения -----
+function renderSyncSettings(){
+  var cfg = syncCfg();
+  document.getElementById("syRepo").value = cfg ? cfg.repo : "";
+  document.getElementById("syTok").value = "";
+  document.getElementById("syTok").placeholder = cfg ? "токен сохранён (оставьте пустым, чтобы не менять)" : "github_pat_…";
+  var st = document.getElementById("sySt");
+  st.textContent = cfg ? "Подключено: "+cfg.repo+". Синхронизация: "+syncStatusText() : "Не подключено.";
+  st.style.color = "var(--muted)";
+}
+document.getElementById("sySave").addEventListener("click", async function(){
+  var repo = document.getElementById("syRepo").value.trim().replace(/^https?:\/\/github\.com\//,"").replace(/\/+$/,"");
+  var tok = document.getElementById("syTok").value.trim();
+  var old = syncCfg(), st = document.getElementById("sySt");
+  if(!tok && old && old.repo===repo) tok = old.token;
+  if(!tok && old) tok = old.token;
+  if(!/^[\w.-]+\/[\w.-]+$/.test(repo) || !tok){ st.style.color = "var(--danger)"; st.textContent = "Укажите репозиторий (имя/репозиторий) и токен."; return; }
+  st.style.color = "var(--muted)"; st.textContent = "Проверяю…";
+  var cfg = {repo:repo, token:tok};
+  try{
+    var info = await gh(cfg, "");
+    if(info.private!==true){ var ep = new Error("public"); ep.code = "public"; throw ep; }
+    var ref = await gh(cfg, "/git/ref/heads/main", {allow404:true});
+    if(!ref){ var ee = new Error("empty"); ee.code = "empty"; throw ee; }
+    setSyncCfg(cfg);
+    st.style.color = "var(--primary-ink)"; st.textContent = "Подключено: "+repo+" (приватный) ✓";
+    document.getElementById("syTok").value = "";
+    renderAppFooter();
+  }catch(e){ st.style.color = "var(--danger)"; st.textContent = syncErrText(e)+" Настройка не сохранена."; }
+});
+document.getElementById("syOff").addEventListener("click", function(){
+  setSyncCfg(null); renderSyncSettings(); renderAppFooter();
+  var st = document.getElementById("sySt"); st.textContent = "Отключено на этом устройстве (общий ключ для всех приложений mrtekhnik.github.io)."; st.style.color = "var(--muted)";
+});
+document.getElementById("syncBtn").addEventListener("click", syncNow);
+document.getElementById("syncNowBtn").addEventListener("click", syncNow);
+renderConflictBadges();
 
 // ---------- PWA: офлайн-режим и обновления ----------
 var swReg = null, updateRequested = false;
