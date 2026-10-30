@@ -290,6 +290,7 @@
   .month-btns .btn-secondary{padding:6px 10px;font-size:calc(12px * var(--fs));white-space:nowrap;}
   .month-row-top .field input{padding:8px 10px;}
   .sync-btn{position:absolute;right:58px;top:10px;background:rgba(255,255,255,.16);color:#fff;border-radius:10px;font-size:calc(18px * var(--fs));line-height:1;padding:7px 10px;}
+  .sync-btn.dirty::after{content:"";position:absolute;top:2px;right:2px;width:11px;height:11px;border-radius:50%;background:#F5C518;border:2px solid var(--primary);}
   .sync-btn.spin{animation:spin 1s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
   .busy-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:80;display:none;align-items:center;justify-content:center;}
@@ -823,6 +824,8 @@
       <input class="set-inp" id="syRepo" placeholder="mrtekhnik/sync" autocomplete="off" autocapitalize="off" spellcheck="false">
       <div class="hint">Токен доступа</div>
       <input class="set-inp" id="syTok" type="password" placeholder="github_pat_…" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <div class="hint">Жёлтая точка на ⟳, если есть несинхронизированные изменения — через:</div>
+      <select class="set-inp" id="syDelay"><option value="0">Сразу</option><option value="3600000">Через 1 ч</option><option value="10800000">Через 3 ч</option><option value="86400000">Через сутки</option></select>
       <div class="row2"><button class="btn-primary" id="sySave" style="padding:10px">Сохранить и проверить</button><button class="btn-secondary" id="syOff" style="text-align:center">Отключить</button></div>
       <div class="hint" id="sySt" style="margin-top:6px"></div>
       <div class="hint" style="margin-top:8px">Настройки вида хранятся в этом браузере и не входят в резервную копию данных.</div>
@@ -1044,24 +1047,29 @@ function initTrack(){
 }
 function trackChanges(){
   var d = data; d.mods = d.mods||{}; d.tomb = d.tomb||{};
-  var cur = snapStrings(d), now = Date.now(), changedState = false;
+  var cur = snapStrings(d), now = Date.now(), changedState = false, anyChange = false;
   Object.keys(cur).forEach(function(id){
+    if(prevSnap[id]!==cur[id]) anyChange = true;
     if(prevSnap[id]!==cur[id] || d.mods[id]==null) d.mods[id] = now;
     if(!(id in prevSnap) && syncState.purged[id]!==undefined){ delete syncState.purged[id]; changedState = true; } // запись вернули («Отменить»)
   });
   Object.keys(prevSnap).forEach(function(id){
     if(!(id in cur)){
+      anyChange = true;
       delete d.mods[id];
       if(syncState.known[id]!==undefined){ syncState.purged[id] = now; changedState = true; }
     }
   });
   [["categories","c:"],["eventCategories","e:"]].forEach(function(p){
     var c = d[p[0]]||[], pv = prevCats[p[0]]||[];
+    if(JSON.stringify(c)!==JSON.stringify(pv)) anyChange = true;
     c.forEach(function(n){ if(pv.indexOf(n)<0 || d.mods[p[1]+n]==null){ d.mods[p[1]+n] = now; delete d.tomb[p[1]+n]; } });
     pv.forEach(function(n){ if(c.indexOf(n)<0){ d.tomb[p[1]+n] = now; delete d.mods[p[1]+n]; } });
   });
   prevSnap = cur; prevCats = catsOf(d);
+  if(anyChange && !syncState.dirtySince){ syncState.dirtySince = now; changedState = true; }
   if(changedState) saveSyncState();
+  if(typeof updateSyncDot==="function") updateSyncDot();
 }
 function save(){ trackChanges(); persist(data); }
 initTrack();
@@ -2408,7 +2416,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.10";
+var APP_VERSION = "1.11";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
@@ -3057,8 +3065,9 @@ async function syncOnce(cfg){
   data = migrateInfo(nd);
   persist(data);
   prevSnap = snapStrings(data); prevCats = catsOf(data);
-  syncState = {known:known, purged:{}, pending:pending, dupOk:dupOk, lastSync:Date.now()};
+  syncState = {known:known, purged:{}, pending:pending, dupOk:dupOk, lastSync:Date.now(), dirtySince:0};
   saveSyncState();
+  updateSyncDot();
   return {up:up, down:down, del:del, conf:conf, lists:listsChanged};
 }
 
@@ -3133,7 +3142,8 @@ function resolveConflict(id, act){
     save();
   } else {
     data.mods[id] = Date.now(); persist(data);
-    delete syncState.pending[id]; saveSyncState();
+    if(!syncState.dirtySince) syncState.dirtySince = Date.now();
+    delete syncState.pending[id]; saveSyncState(); updateSyncDot();
   }
   prevSnap = snapStrings(data); prevCats = catsOf(data);
   refreshAllViews();
@@ -3142,9 +3152,36 @@ function resolveConflict(id, act){
 }
 document.getElementById("conflictLater").addEventListener("click", function(){ document.getElementById("conflictSheetBg").classList.remove("show"); });
 
+// ----- индикатор несинхронизированных изменений (жёлтая точка на ⟳) -----
+var dotTimer = null;
+function syncDelayMs(){ var v = prefs.syncDelay; return (typeof v==="number" && v>=0) ? v : 3600000; }
+function syncDotNeeded(){
+  if(!syncCfg()) return false;
+  if(!syncState.lastSync) return true;                       // синхронизации ещё не было — сразу
+  if(!syncState.dirtySince) return false;
+  return Date.now() - syncState.dirtySince >= syncDelayMs();
+}
+function updateSyncDot(){
+  var btn = document.getElementById("syncBtn"); if(!btn) return;
+  clearTimeout(dotTimer);
+  var on = syncDotNeeded();
+  btn.classList.toggle("dirty", on);
+  var tip = on ? "Есть несинхронизированные изменения" : "Синхронизировать";
+  btn.title = tip; btn.setAttribute("aria-label", tip);
+  if(!on && syncCfg() && syncState.lastSync && syncState.dirtySince){
+    var wait = syncState.dirtySince + syncDelayMs() - Date.now();
+    if(wait > 0) dotTimer = setTimeout(updateSyncDot, Math.min(wait + 50, 2147483000));
+  }
+}
+document.addEventListener("visibilitychange", function(){ if(document.visibilityState==="visible") updateSyncDot(); });
+document.getElementById("syDelay").addEventListener("change", function(){
+  prefs.syncDelay = parseInt(this.value,10) || 0; savePrefs(); updateSyncDot();
+});
+
 // ----- настройки подключения -----
 function renderSyncSettings(){
   var cfg = syncCfg();
+  document.getElementById("syDelay").value = String(syncDelayMs());
   document.getElementById("syRepo").value = cfg ? cfg.repo : "";
   document.getElementById("syTok").value = "";
   document.getElementById("syTok").placeholder = cfg ? "токен сохранён (оставьте пустым, чтобы не менять)" : "github_pat_…";
@@ -3169,16 +3206,17 @@ document.getElementById("sySave").addEventListener("click", async function(){
     setSyncCfg(cfg);
     st.style.color = "var(--primary-ink)"; st.textContent = "Подключено: "+repo+" (приватный) ✓";
     document.getElementById("syTok").value = "";
-    renderAppFooter();
+    renderAppFooter(); updateSyncDot();
   }catch(e){ st.style.color = "var(--danger)"; st.textContent = syncErrText(e)+" Настройка не сохранена."; }
 });
 document.getElementById("syOff").addEventListener("click", function(){
-  setSyncCfg(null); renderSyncSettings(); renderAppFooter();
+  setSyncCfg(null); renderSyncSettings(); renderAppFooter(); updateSyncDot();
   var st = document.getElementById("sySt"); st.textContent = "Отключено на этом устройстве (общий ключ для всех приложений mrtekhnik.github.io)."; st.style.color = "var(--muted)";
 });
 document.getElementById("syncBtn").addEventListener("click", syncNow);
 document.getElementById("syncNowBtn").addEventListener("click", syncNow);
 renderConflictBadges();
+updateSyncDot();
 
 // ---------- PWA: офлайн-режим и обновления ----------
 var swReg = null, updateRequested = false;
