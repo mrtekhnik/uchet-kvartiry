@@ -347,6 +347,13 @@
   .inline-row .btn-secondary[style*="display:none"]{flex:0 0 0;}
   .toggle-panel{display:none;margin-top:10px;}
   .toggle-panel.open{display:block;}
+  .kpi-head{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .chip-toggle{background:var(--primary-soft);color:var(--primary-ink);font-weight:700;font-size:calc(12px * var(--fs));border-radius:999px;padding:6px 12px;flex:none;}
+  .kpi-more{margin-top:8px;border-top:1px dashed var(--line);padding-top:4px;}
+  .kpi-line{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:5px 2px;font-size:calc(12.5px * var(--fs));color:var(--muted);}
+  .kpi-line b{color:var(--ink);font-size:calc(14px * var(--fs));white-space:nowrap;}
+  .period-row2{grid-template-columns:3fr 2fr;}
+  .period-row2 input[type=month], .period-row2 select{padding-left:10px;padding-right:6px;}
   .section-gap{height:2px;}
   .subtle-btn-row{display:flex;gap:8px;margin-top:6px;}
 
@@ -408,7 +415,7 @@
 
       <div data-card="period" class="card">
         <h2>Период для анализа</h2>
-        <div class="row2">
+        <div class="row2 period-row2">
           <div class="field" style="margin-bottom:0">
             <label for="mainMonth">Месяц</label>
             <input type="month" id="mainMonth">
@@ -447,20 +454,20 @@
       </div>
 
       <div data-card="kpi" class="card">
-        <h2>Основные показатели</h2>
-        <div class="kpi-grid">
+        <div class="kpi-head">
+          <h2 style="margin:0">Основные показатели</h2>
+          <button class="chip-toggle" data-toggle="kpiMore">Ещё ▸</button>
+        </div>
+        <div class="kpi-grid" style="margin-top:10px">
           <div class="kpi"><div class="label">За месяц</div><div class="value" id="kpiMonth">—</div></div>
           <div class="kpi"><div class="label">За год</div><div class="value" id="kpiYear">—</div></div>
         </div>
-        <details class="collapse-block">
-          <summary>Ещё показатели</summary>
-          <div class="kpi-grid" style="margin-top:10px">
-            <div class="kpi"><div class="label">За произвольный период</div><div class="value" id="kpiRange">—</div></div>
-            <div class="kpi"><div class="label">Среднее в мес. (период)</div><div class="value" id="kpiAvgRange">—</div></div>
-            <div class="kpi"><div class="label">За весь период</div><div class="value" id="kpiTotal">—</div></div>
-            <div class="kpi"><div class="label">Среднее в мес. (весь период)</div><div class="value" id="kpiAvg">—</div></div>
-          </div>
-        </details>
+        <div class="toggle-panel kpi-more" id="kpiMore">
+          <div class="kpi-line"><span>За произвольный период</span><b id="kpiRange">—</b></div>
+          <div class="kpi-line"><span>Среднее в мес. (период)</span><b id="kpiAvgRange">—</b></div>
+          <div class="kpi-line"><span>За весь период</span><b id="kpiTotal">—</b></div>
+          <div class="kpi-line"><span>Среднее в мес. (весь период)</span><b id="kpiAvg">—</b></div>
+        </div>
       </div>
 
       <div data-card="services" class="card">
@@ -2425,7 +2432,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.12";
+var APP_VERSION = "1.13";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
