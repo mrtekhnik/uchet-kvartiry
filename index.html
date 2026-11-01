@@ -267,7 +267,8 @@
   .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:60;display:none;align-items:flex-start;justify-content:center;}
   .sheet-bg.show{display:flex;}
   .sheet{background:var(--surface);width:100%;max-width:480px;max-height:100vh;overflow-y:auto;border-radius:0 0 16px 16px;padding:12px 14px 14px;}
-  .sheet h3{margin:0 0 2px;font-size:calc(16px * var(--fs));}
+  .sheet .hint{font-size:calc(13.5px * var(--fs));}
+  .sheet h3{margin:0 0 2px;font-size:calc(19px * var(--fs));}
   .sheet .sg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:2px;}
   .sheet .sg input{padding:8px 10px;font-size:calc(16px * var(--fs));border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--input-bg);color:var(--ink);}
   .sheet .sg label{font-size:calc(11.5px * var(--fs));color:var(--muted);display:block;margin-bottom:2px;}
@@ -327,12 +328,12 @@
   .fold-card.folded .fold-head::after{transform:rotate(-90deg);}
   .fold-card:not(.folded) > .fold-head{margin-bottom:10px;}
   .fold-card.folded > *:not(.fold-head){display:none !important;}
-  .set-sec{font-size:calc(12px * var(--fs));font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:14px 0 6px;}
+  .set-sec{font-size:calc(14px * var(--fs));font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:14px 0 6px;}
   .set-sec{cursor:pointer;display:flex;justify-content:space-between;align-items:center;}
   .set-sec::after{content:"▾";font-size:14px;transition:transform .15s;}
   .set-sec.folded::after{transform:rotate(-90deg);}
   .set-grp.folded{display:none;}
-  .set-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:calc(14px * var(--fs));}
+  .set-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:calc(16px * var(--fs));}
   .set-row input[type=checkbox]{width:22px;height:22px;accent-color:var(--primary);}
   .theme-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
   .theme-btn{border:2px solid var(--line);border-radius:12px;padding:8px 4px;font-size:calc(12px * var(--fs));font-weight:600;background:var(--surface);color:var(--ink);display:flex;flex-direction:column;align-items:center;gap:5px;}
@@ -619,9 +620,8 @@
           <div class="stitle-row">
             <span class="stitle">⚡ Электро</span>
             <span class="stitle-links">
-              <a class="link-chip" href="https://pa.oblenergo.kharkiv.ua/frontend/web/index.php/uk/changed-acc/input-data-to-account" target="_blank" rel="noopener">Показ.</a>
+              <a class="link-chip" href="https://pa.oblenergo.kharkiv.ua/frontend/web/index.php/uk/changed-acc/input-data-to-account" target="_blank" rel="noopener">Показания</a>
               <a class="link-chip" href="https://my.zbutenergo.kharkov.ua/accounts/12741434/DetailsSaldo" target="_blank" rel="noopener">Счёт</a>
-              <a class="link-chip" href="https://pa.oblenergo.kharkiv.ua/frontend/web/index.php/uk/changed-acc/counter-history?begin=04.03.2026&end=04.09.2026#history" target="_blank" rel="noopener">История</a>
             </span>
           </div>
           <div class="row2">
@@ -2500,7 +2500,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.20";
+var APP_VERSION = "1.21";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
