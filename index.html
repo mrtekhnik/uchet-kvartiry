@@ -291,6 +291,8 @@
   .month-row-top .field input{padding:8px 10px;}
   .sync-btn{position:absolute;right:58px;top:10px;background:rgba(255,255,255,.16);color:#fff;border-radius:10px;font-size:calc(18px * var(--fs));line-height:1;padding:7px 10px;}
   .sync-btn.dirty::after{content:"";position:absolute;top:2px;right:2px;width:11px;height:11px;border-radius:50%;background:#F5C518;border:2px solid var(--primary);}
+  .sync-btn.undo-hdr{right:106px;}
+  .undo-hdr b{font-size:calc(10px * var(--fs));margin-left:2px;vertical-align:top;}
   .sync-btn.spin{animation:spin 1s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
   .busy-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:80;display:none;align-items:center;justify-content:center;}
@@ -354,6 +356,12 @@
   .kpi-line b{color:var(--ink);font-size:calc(14px * var(--fs));white-space:nowrap;}
   .period-row2{grid-template-columns:3fr 2fr;}
   .period-row2 input[type=month], .period-row2 select{padding-left:10px;padding-right:6px;}
+  .copy-card{padding:8px 12px;}
+  .copy-title{font-size:calc(11.5px * var(--fs));color:var(--muted);margin-bottom:6px;}
+  .copy-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .copy-chip{flex:1 1 90px;background:var(--primary-soft);color:var(--primary-ink);border-radius:10px;padding:8px 6px;font-weight:700;font-size:calc(14px * var(--fs));text-align:center;}
+  .copy-chip small{display:block;font-weight:600;font-size:calc(10.5px * var(--fs));opacity:.75;}
+  .copy-chip.done{background:var(--primary);color:#fff;}
   .section-gap{height:2px;}
   .subtle-btn-row{display:flex;gap:8px;margin-top:6px;}
 
@@ -396,6 +404,7 @@
   <header class="topbar">
     <div class="brand">🏠 Учёт квартиры</div>
     <h1 id="topbarTitle">Главная</h1>
+    <button class="sync-btn undo-hdr" id="undoHdrBtn" title="Отменить последнее изменение" aria-label="Отменить" style="display:none">↶<b></b></button>
     <button class="sync-btn" id="syncBtn" title="Синхронизировать" aria-label="Синхронизировать">⟳</button>
     <button class="gear-btn" id="gearBtn" title="Вид и настройки" aria-label="Вид и настройки">⚙</button>
   </header>
@@ -566,6 +575,11 @@
           </div>
         </div>
         <div class="hint" id="noPrevMonthHint"></div>
+      </div>
+
+      <div class="card compact-card copy-card" id="copyCard" style="display:none">
+        <div class="copy-title">Нажмите на показание, чтобы скопировать</div>
+        <div class="copy-row" id="copyRow"></div>
       </div>
 
       <div class="card compact-card">
@@ -834,6 +848,9 @@
       <div class="bg-grid" id="bgGrid"></div>
       <div class="set-sec">Размер шрифта</div>
       <div class="font-seg" id="fontSeg"></div>
+      <div class="set-sec">Плашка «Отменить»</div>
+      <div class="hint">Закрывается сама через (шаги отмены остаются в шапке ↶ до закрытия приложения):</div>
+      <select class="set-inp" id="undoSecSel"><option value="0">Не закрывать</option><option value="10">10 секунд</option><option value="30">30 секунд</option><option value="60">1 минута</option><option value="300">5 минут</option></select>
       <div class="set-sec">Синхронизация через GitHub</div>
       <div class="hint" style="margin-bottom:8px">Телефон и компьютер обмениваются данными через ваш <b>приватный</b> репозиторий по кнопке ⟳. Подключение общее для всех приложений на mrtekhnik.github.io: если оно уже настроено в другом приложении, здесь ничего вводить не нужно.</div>
       <div class="hint">Репозиторий (имя/репозиторий)</div>
@@ -1150,21 +1167,45 @@ document.querySelectorAll(".tab-btn").forEach(function(btn){
 });
 
 // ============================================================
-// ОТМЕНА УДАЛЕНИЯ (тост) — без таймера, висит пока не нажмут
-// стрелку "отменить" или крестик "закрыть"
+// ОТМЕНА ИЗМЕНЕНИЙ: стек шагов в текущей сессии (до 30), плашка с «↶ Отменить»
+// закрывается сама через заданное в настройках время; кнопка ↶ в шапке остаётся.
 // ============================================================
-function showUndoToast(message, restoreFn){
+var undoStack = [], undoTimer = null, UNDO_MAX = 30;
+function undoSeconds(){ var v = prefs.undoSec; return (typeof v==="number" && v>=0) ? v : 30; }
+function hideUndoToast(){ document.getElementById("undoToast").style.display = "none"; clearTimeout(undoTimer); }
+function renderUndo(showToast, prefix){
+  var n = undoStack.length;
+  var hb = document.getElementById("undoHdrBtn");
+  hb.style.display = n ? "block" : "none";
+  hb.querySelector("b").textContent = n>1 ? n : "";
   var toast = document.getElementById("undoToast");
-  document.getElementById("undoToastMsg").textContent = message;
+  if(!n){ hideUndoToast(); return; }
+  if(!showToast) return;
+  var top = undoStack[n-1];
+  document.getElementById("undoToastMsg").textContent = (prefix||"") + top.msg + (n>1 ? " · шагов для отмены: "+n : "");
   toast.style.display = "flex";
-  document.getElementById("undoToastBtn").onclick = function(){
-    toast.style.display = "none";
-    restoreFn();
-  };
-  document.getElementById("undoToastClose").onclick = function(){
-    toast.style.display = "none";
-  };
+  clearTimeout(undoTimer);
+  var sec = undoSeconds();
+  if(sec>0) undoTimer = setTimeout(hideUndoToast, sec*1000);
 }
+function showUndoToast(message, restoreFn){
+  undoStack.push({msg:message, fn:restoreFn});
+  if(undoStack.length>UNDO_MAX) undoStack.shift();
+  renderUndo(true);
+}
+function doUndo(){
+  var it = undoStack.pop();
+  if(!it) return;
+  it.fn();
+  if(undoStack.length) renderUndo(true, "Отменено. Следующий шаг: ");
+  else { hideUndoToast(); renderUndo(false); }
+}
+document.getElementById("undoToastBtn").addEventListener("click", doUndo);
+document.getElementById("undoHdrBtn").addEventListener("click", function(){
+  if(document.getElementById("undoToast").style.display==="flex") doUndo();
+  else renderUndo(true);               // первый тап показывает, что именно отменится
+});
+document.getElementById("undoToastClose").addEventListener("click", hideUndoToast);
 
 // ============================================================
 // ГЛАВНАЯ
@@ -1702,6 +1743,7 @@ function loadFormFromMonth(key){
 
   updateInputHints(key);
   updateInputTotal();
+  renderCopyChips();
   document.getElementById("deleteMonthBtn").style.display = hasAnyData(data.monthly[key]) ? "block" : "none";
   updateInputBackToTodayBtn();
 }
@@ -1854,6 +1896,7 @@ document.getElementById("deleteMonthBtn").addEventListener("click", function(){
 
 function renderInputTab_afterSave(){
   updateInputHints(inputMonthEl.value);
+  renderCopyChips();
 }
 
 function renderMonthList(){
@@ -2432,7 +2475,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.13";
+var APP_VERSION = "1.14";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
@@ -2732,7 +2775,7 @@ function isPresetFor(themeKey, color){
   return presets.some(function(b){ return b[0]===color; });
 }
 function rerenderCharts(){ try{ renderMain(); }catch(e){} }
-function openSettings(){ renderSettings(); renderSyncSettings(); document.getElementById("settingsSheetBg").classList.add("show"); }
+function openSettings(){ renderSettings(); renderSyncSettings(); document.getElementById("undoSecSel").value = String(undoSeconds()); document.getElementById("settingsSheetBg").classList.add("show"); }
 function closeSettings(){ document.getElementById("settingsSheetBg").classList.remove("show"); }
 document.getElementById("gearBtn").addEventListener("click", openSettings);
 document.getElementById("openSettingsBtn").addEventListener("click", openSettings);
@@ -3190,6 +3233,7 @@ function updateSyncDot(){
   }
 }
 document.addEventListener("visibilitychange", function(){ if(document.visibilityState==="visible") updateSyncDot(); });
+document.getElementById("undoSecSel").addEventListener("change", function(){ prefs.undoSec = parseInt(this.value,10)||0; savePrefs(); });
 document.getElementById("syDelay").addEventListener("change", function(){
   prefs.syncDelay = parseInt(this.value,10) || 0; savePrefs(); updateSyncDot();
 });
@@ -3303,6 +3347,40 @@ document.querySelectorAll("[data-toggle]").forEach(function(btn){
     btn.textContent = btn.textContent.replace(/\s*[▸▾]$/, "") + (open ? " ▾" : " ▸");
   });
 });
+
+// ---------- копирование показаний по клику ----------
+function copyText(t){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    return navigator.clipboard.writeText(t).catch(function(){ return legacyCopy(t); });
+  }
+  return Promise.resolve(legacyCopy(t));
+}
+function legacyCopy(t){
+  var ta = document.createElement("textarea");
+  ta.value = t; ta.style.position = "fixed"; ta.style.opacity = "0";
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand("copy"); }catch(e){}
+  document.body.removeChild(ta);
+}
+function renderCopyChips(){
+  var card = document.getElementById("copyCard"), row = document.getElementById("copyRow");
+  var key = inputMonthEl.value, m = data.monthly[key] || {};
+  var items = [["Газ","gasReading","м³"],["Свет","elReading","кВт·ч"],["Вода","waterReading","м³"]].filter(function(x){ return m[x[1]]!=null && m[x[1]]!==""; });
+  if(!items.length){ card.style.display = "none"; row.innerHTML = ""; return; }
+  card.style.display = "block";
+  row.innerHTML = items.map(function(x){
+    return '<button class="copy-chip" data-copy="'+m[x[1]]+'"><small>'+x[0]+', '+x[2]+'</small>'+m[x[1]]+'</button>';
+  }).join("");
+  row.querySelectorAll(".copy-chip").forEach(function(b){
+    b.addEventListener("click", function(){
+      var val = b.getAttribute("data-copy"), small = b.querySelector("small").textContent;
+      copyText(val).then(function(){
+        b.classList.add("done"); b.querySelector("small").textContent = "Скопировано";
+        setTimeout(function(){ b.classList.remove("done"); b.querySelector("small").textContent = small; }, 1200);
+      });
+    });
+  });
+}
 
 // ---------- кнопка «Наверх» ----------
 var toTopBtn = document.getElementById("toTopBtn");
