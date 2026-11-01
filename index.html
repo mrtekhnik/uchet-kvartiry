@@ -2500,7 +2500,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.22";
+var APP_VERSION = "1.23";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
@@ -3477,7 +3477,7 @@ document.getElementById("fitSel").addEventListener("change", function(){ prefs.f
   document.addEventListener("focusin", function(e){
     if(!isField(e.target) || !document.getElementById("tab-input").classList.contains("active")) return;
     if(!document.getElementById("inputCard").contains(e.target) && e.target.id!=="inputMonth") return;
-    clearTimeout(kbTimer); document.body.classList.add("kb-open"); setKbh(); setTimeout(setKbh,300);
+    clearTimeout(kbTimer); document.body.classList.add("kb-open"); startGuard(); setKbh(); setTimeout(setKbh,300);
     setTimeout(function(){ try{ e.target.scrollIntoView({block:"center", behavior:"smooth"}); }catch(_){} }, 250);
   });
   function kbGuard(){
@@ -3487,12 +3487,15 @@ document.getElementById("fitSel").addEventListener("change", function(){ prefs.f
   ["click","touchend","visibilitychange","pageshow"].forEach(function(ev){ document.addEventListener(ev, function(){ setTimeout(kbGuard, 200); }, true); });
   window.addEventListener("pageshow", kbGuard);
   // страховка: если поле пропало (перерисовка формы) и focusout не пришёл — вернуть нижние вкладки
+  var guardT = null;
   function kbGuard(){
-    if(document.body.classList.contains("kb-open") && !isField(document.activeElement)){
+    if(!document.body.classList.contains("kb-open")){ clearInterval(guardT); guardT = null; return; }
+    if(!isField(document.activeElement)){
       document.body.classList.remove("kb-open"); setKbh(); setTabH(); fitInputCard();
+      clearInterval(guardT); guardT = null;
     }
   }
-  setInterval(kbGuard, 800);
+  function startGuard(){ if(!guardT) guardT = setInterval(kbGuard, 800); }
   document.addEventListener("click", function(){ setTimeout(kbGuard, 200); }, true);
   document.addEventListener("focusout", function(){
     clearTimeout(kbTimer);
