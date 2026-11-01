@@ -861,8 +861,9 @@
       <div class="set-sec">Размер шрифта</div>
       <div class="font-seg" id="fontSeg"></div>
       <div class="set-sec">Форма ввода показаний</div>
-      <label class="set-row"><span>Подгонять под высоту экрана</span><input type="checkbox" id="fitInputChk"></label>
-      <div class="hint">Если при выбранном размере шрифта форма ввода не помещается на экране, она сжимается целиком (вместе с текстом), чтобы все показания были видны сразу. В пределах 70%.</div>
+      <div class="hint">Масштаб формы ввода (вместе с текстом). «Авто» сжимает форму, только если она не помещается на экране.</div>
+      <select class="set-inp" id="fitSel"><option value="auto">Авто</option><option value="1">100%</option><option value="0.9">90%</option><option value="0.8">80%</option><option value="0.7">70%</option><option value="0.6">60%</option></select>
+      <div class="hint" id="fitDiag"></div>
       <div class="set-sec">Плашка «Отменить»</div>
       <div class="hint">Закрывается сама через (шаги отмены остаются в шапке ↶ до закрытия приложения):</div>
       <select class="set-inp" id="undoSecSel"><option value="0">Не закрывать</option><option value="10">10 секунд</option><option value="30">30 секунд</option><option value="60">1 минута</option><option value="300">5 минут</option></select>
@@ -2493,7 +2494,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.17";
+var APP_VERSION = "1.18";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
@@ -2794,7 +2795,7 @@ function isPresetFor(themeKey, color){
   return presets.some(function(b){ return b[0]===color; });
 }
 function rerenderCharts(){ try{ renderMain(); }catch(e){} }
-function openSettings(){ renderSettings(); renderSyncSettings(); document.getElementById("fitInputChk").checked = prefs.fitInput!==false; document.getElementById("undoSecSel").value = String(undoSeconds()); document.getElementById("settingsSheetBg").classList.add("show"); }
+function openSettings(){ renderSettings(); renderSyncSettings(); document.getElementById("fitSel").value = fitMode(); renderFitDiag(); document.getElementById("undoSecSel").value = String(undoSeconds()); document.getElementById("settingsSheetBg").classList.add("show"); }
 function closeSettings(){ document.getElementById("settingsSheetBg").classList.remove("show"); }
 document.getElementById("gearBtn").addEventListener("click", openSettings);
 document.getElementById("openSettingsBtn").addEventListener("click", openSettings);
@@ -3424,23 +3425,35 @@ function renderCopyChips(){
 });
 
 // ---------- подгонка формы ввода под высоту экрана ----------
-var fitRaf = null;
-function fitInputCard(){
+var fitRaf = null, lastFit = {};
+function fitMode(){ if(prefs.fitMode) return prefs.fitMode; return prefs.fitInput===false ? "1" : "auto"; }
+function fitInputCard(force){
   cancelAnimationFrame(fitRaf);
   fitRaf = requestAnimationFrame(function(){
     var card = document.getElementById("inputCard");
     if(!card) return;
+    var panelOn = document.getElementById("tab-input").classList.contains("active");
+    var ae = document.activeElement;
+    if(!force && panelOn && ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) && card.contains(ae)) return;   // клавиатура открыта — не дёргаем
+    var mode = fitMode(), z = 1;
     card.style.zoom = "1";
-    if(prefs.fitInput===false || !document.getElementById("tab-input").classList.contains("active")) return;
+    if(!panelOn){ return; }
     var tab = document.querySelector("nav.tabbar").getBoundingClientRect().top;
-    var top = card.getBoundingClientRect().top + (window.pageYOffset||0);   // позиция при прокрутке 0
+    var top = card.getBoundingClientRect().top + (window.pageYOffset||0);
     var h = card.getBoundingClientRect().height;
-    var z = (tab - top - 8) / h;
-    if(z < 1) card.style.zoom = String(Math.max(0.7, Math.round(z*100)/100));
+    if(mode==="auto"){ var need = (tab - top - 8) / h; if(need < 1) z = Math.max(0.6, Math.round(need*100)/100); }
+    else z = parseFloat(mode) || 1;
+    if(z !== 1) card.style.zoom = String(z);
+    lastFit = {z:z, inner:window.innerHeight, tab:Math.round(tab), top:Math.round(top), h:Math.round(h)};
+    renderFitDiag();
   });
 }
-window.addEventListener("resize", fitInputCard);
-document.getElementById("fitInputChk").addEventListener("change", function(){ prefs.fitInput = this.checked; savePrefs(); fitInputCard(); });
+function renderFitDiag(){
+  var el = document.getElementById("fitDiag"); if(!el) return;
+  el.textContent = lastFit.inner ? "Сейчас: масштаб "+Math.round(lastFit.z*100)+"%, высота экрана "+lastFit.inner+", форма "+lastFit.h+" px, свободно до панели "+(lastFit.tab-lastFit.top)+" px." : "Данные появятся после открытия вкладки «Ввод».";
+}
+window.addEventListener("resize", function(){ fitInputCard(); });
+document.getElementById("fitSel").addEventListener("change", function(){ prefs.fitMode = this.value; savePrefs(); fitInputCard(true); });
 
 // ---------- кнопка «Наверх» ----------
 var toTopBtn = document.getElementById("toTopBtn");
