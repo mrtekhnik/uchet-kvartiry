@@ -328,6 +328,10 @@
   .fold-card:not(.folded) > .fold-head{margin-bottom:10px;}
   .fold-card.folded > *:not(.fold-head){display:none !important;}
   .set-sec{font-size:calc(12px * var(--fs));font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:14px 0 6px;}
+  .set-sec{cursor:pointer;display:flex;justify-content:space-between;align-items:center;}
+  .set-sec::after{content:"▾";font-size:14px;transition:transform .15s;}
+  .set-sec.folded::after{transform:rotate(-90deg);}
+  .set-grp.folded{display:none;}
   .set-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:calc(14px * var(--fs));}
   .set-row input[type=checkbox]{width:22px;height:22px;accent-color:var(--primary);}
   .theme-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
@@ -356,12 +360,23 @@
   .kpi-line b{color:var(--ink);font-size:calc(14px * var(--fs));white-space:nowrap;}
   .period-row2{grid-template-columns:3fr 2fr;}
   .period-row2 input[type=month], .period-row2 select{padding-left:10px;padding-right:6px;}
-  .copy-card{padding:8px 12px;}
-  .copy-title{font-size:calc(11.5px * var(--fs));color:var(--muted);margin-bottom:6px;}
+    .copy-title{font-size:calc(11.5px * var(--fs));color:var(--muted);margin-bottom:6px;}
   .copy-row{display:flex;gap:8px;flex-wrap:wrap;}
   .copy-chip{flex:1 1 90px;background:var(--primary-soft);color:var(--primary-ink);border-radius:10px;padding:8px 6px;font-weight:700;font-size:calc(14px * var(--fs));text-align:center;}
   .copy-chip small{display:block;font-weight:600;font-size:calc(10.5px * var(--fs));opacity:.75;}
   .copy-chip.done{background:var(--primary);color:#fff;}
+  .inp-wrap{position:relative;}
+  .inp-wrap input{padding-right:40px !important;}
+  .copy-mini{position:absolute;right:4px;top:50%;transform:translateY(-50%);background:var(--primary-soft);color:var(--primary-ink);border-radius:8px;width:32px;height:30px;font-size:calc(16px * var(--fs));line-height:1;padding:0;}
+  .copy-mini.done{background:var(--primary);color:#fff;}
+  .save-row{display:flex;gap:8px;align-items:stretch;margin-top:6px;}
+  .save-row .btn-primary{margin-top:0;flex:1;padding:11px;}
+  .save-row .btn-danger-text{flex:none;border:1px solid var(--danger-soft);border-radius:var(--radius-sm);padding:0 12px;}
+  .compact-card .service-block{margin-bottom:6px;}
+  .compact-card .service-block .stitle-row{margin-bottom:2px;}
+  .compact-card .total-row{padding-top:6px;margin-top:2px;}
+  .compact-card .field label{margin-bottom:2px;font-size:calc(11.5px * var(--fs));}
+  .compact-card .field input{padding:7px 10px;}
   .section-gap{height:2px;}
   .subtle-btn-row{display:flex;gap:8px;margin-top:6px;}
 
@@ -577,11 +592,6 @@
         <div class="hint" id="noPrevMonthHint"></div>
       </div>
 
-      <div class="card compact-card copy-card" id="copyCard" style="display:none">
-        <div class="copy-title">Нажмите на показание, чтобы скопировать</div>
-        <div class="copy-row" id="copyRow"></div>
-      </div>
-
       <div class="card compact-card">
         <div class="service-block gas">
           <div class="stitle-row">
@@ -592,7 +602,7 @@
           </div>
           <div class="row2">
             <div class="field"><label>Показание, м³</label>
-              <input type="number" inputmode="decimal" id="f_gasReading" placeholder="0">
+              <div class="inp-wrap"><input type="number" inputmode="decimal" id="f_gasReading" placeholder="0"><button type="button" class="copy-mini" id="copy_gas" title="Скопировать показание" aria-label="Скопировать показание" style="display:none">⧉</button></div>
               <span class="prev-badge" id="prevbadge_gas" style="display:none"></span>
               <div class="hint" id="hint_gas"></div></div>
             <div class="field"><label>Оплата, грн</label>
@@ -612,7 +622,7 @@
           </div>
           <div class="row2">
             <div class="field"><label>Показание, кВт·ч</label>
-              <input type="number" inputmode="decimal" id="f_elReading" placeholder="0">
+              <div class="inp-wrap"><input type="number" inputmode="decimal" id="f_elReading" placeholder="0"><button type="button" class="copy-mini" id="copy_el" title="Скопировать показание" aria-label="Скопировать показание" style="display:none">⧉</button></div>
               <span class="prev-badge" id="prevbadge_el" style="display:none"></span>
               <div class="hint" id="hint_el"></div></div>
             <div class="field"><label>Оплата, грн</label>
@@ -624,7 +634,7 @@
           <div class="stitle">💧 Вода</div>
           <div class="row2">
             <div class="field"><label>Показание, м³</label>
-              <input type="number" inputmode="decimal" id="f_waterReading" placeholder="0">
+              <div class="inp-wrap"><input type="number" inputmode="decimal" id="f_waterReading" placeholder="0"><button type="button" class="copy-mini" id="copy_water" title="Скопировать показание" aria-label="Скопировать показание" style="display:none">⧉</button></div>
               <span class="prev-badge" id="prevbadge_water" style="display:none"></span>
               <div class="hint" id="hint_water"></div></div>
             <div class="field"><label>Оплата, грн</label>
@@ -649,8 +659,10 @@
         </div>
 
         <div class="total-row"><span>Итого за месяц</span><span class="v" id="inputTotal">0 грн</span></div>
-        <button class="btn-primary" id="saveMonthBtn">Сохранить месяц</button>
-        <button class="btn-danger-text" id="deleteMonthBtn" style="width:100%;margin-top:8px;text-align:center;border:1px solid var(--danger-soft);border-radius:var(--radius-sm);padding:10px;display:none">Удалить данные этого месяца</button>
+        <div class="save-row">
+          <button class="btn-danger-text" id="deleteMonthBtn" style="display:none">Удалить</button>
+          <button class="btn-primary" id="saveMonthBtn">Сохранить месяц</button>
+        </div>
       </div>
 
       <div class="card">
@@ -861,7 +873,7 @@
       <select class="set-inp" id="syDelay"><option value="0">Сразу</option><option value="3600000">Через 1 ч</option><option value="10800000">Через 3 ч</option><option value="86400000">Через сутки</option></select>
       <div class="row2"><button class="btn-primary" id="sySave" style="padding:10px">Сохранить и проверить</button><button class="btn-secondary" id="syOff" style="text-align:center">Отключить</button></div>
       <div class="hint" id="sySt" style="margin-top:6px"></div>
-      <div class="hint" style="margin-top:8px">Настройки вида хранятся в этом браузере и не входят в резервную копию данных.</div>
+      <div class="hint set-end" style="margin-top:8px">Настройки вида хранятся в этом браузере и не входят в резервную копию данных.</div>
       <button class="btn-primary" id="settingsClose" style="margin-top:12px">Готово</button>
     </div>
   </div>
@@ -2475,7 +2487,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.14";
+var APP_VERSION = "1.15";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
@@ -2781,6 +2793,28 @@ document.getElementById("gearBtn").addEventListener("click", openSettings);
 document.getElementById("openSettingsBtn").addEventListener("click", openSettings);
 document.getElementById("settingsClose").addEventListener("click", closeSettings);
 document.getElementById("settingsSheetBg").addEventListener("click", function(e){ if(e.target===this) closeSettings(); });
+
+// ---------- сворачиваемые группы в настройках ----------
+(function(){
+  var sheet = document.querySelector("#settingsSheetBg .sheet");
+  prefs.setFold = prefs.setFold || {};
+  Array.prototype.slice.call(sheet.querySelectorAll(".set-sec")).forEach(function(h, i){
+    var grp = document.createElement("div"); grp.className = "set-grp";
+    var n = h.nextElementSibling;
+    while(n && !n.classList.contains("set-sec") && !n.classList.contains("set-end")){
+      var nx = n.nextElementSibling; grp.appendChild(n); n = nx;
+    }
+    h.parentNode.insertBefore(grp, n);
+    var key = h.textContent.trim();
+    var folded = key in prefs.setFold ? !!prefs.setFold[key] : true;      // по умолчанию свёрнуты
+    h.classList.toggle("folded", folded); grp.classList.toggle("folded", folded);
+    h.addEventListener("click", function(){
+      var f = !h.classList.contains("folded");
+      h.classList.toggle("folded", f); grp.classList.toggle("folded", f);
+      prefs.setFold[key] = f; savePrefs();
+    });
+  });
+})();
 
 // ---------- сворачиваемые карточки «Справочников» ----------
 function unfoldCard(card){
@@ -3363,24 +3397,24 @@ function legacyCopy(t){
   document.body.removeChild(ta);
 }
 function renderCopyChips(){
-  var card = document.getElementById("copyCard"), row = document.getElementById("copyRow");
   var key = inputMonthEl.value, m = data.monthly[key] || {};
-  var items = [["Газ","gasReading","м³"],["Свет","elReading","кВт·ч"],["Вода","waterReading","м³"]].filter(function(x){ return m[x[1]]!=null && m[x[1]]!==""; });
-  if(!items.length){ card.style.display = "none"; row.innerHTML = ""; return; }
-  card.style.display = "block";
-  row.innerHTML = items.map(function(x){
-    return '<button class="copy-chip" data-copy="'+m[x[1]]+'"><small>'+x[0]+', '+x[2]+'</small>'+m[x[1]]+'</button>';
-  }).join("");
-  row.querySelectorAll(".copy-chip").forEach(function(b){
-    b.addEventListener("click", function(){
-      var val = b.getAttribute("data-copy"), small = b.querySelector("small").textContent;
-      copyText(val).then(function(){
-        b.classList.add("done"); b.querySelector("small").textContent = "Скопировано";
-        setTimeout(function(){ b.classList.remove("done"); b.querySelector("small").textContent = small; }, 1200);
-      });
-    });
+  [["gas","gasReading"],["el","elReading"],["water","waterReading"]].forEach(function(x){
+    var btn = document.getElementById("copy_"+x[0]), has = m[x[1]]!=null && m[x[1]]!=="";
+    btn.style.display = has ? "block" : "none";
+    btn.setAttribute("data-copy", has ? String(m[x[1]]) : "");
   });
 }
+["gas","el","water"].forEach(function(k){
+  var btn = document.getElementById("copy_"+k);
+  btn.addEventListener("click", function(){
+    var val = btn.getAttribute("data-copy"); if(!val) return;
+    copyText(val).then(function(){
+      btn.classList.add("done"); btn.textContent = "✓";
+      toastMsg("Скопировано: "+val);
+      setTimeout(function(){ btn.classList.remove("done"); btn.textContent = "⧉"; }, 1200);
+    });
+  });
+});
 
 // ---------- кнопка «Наверх» ----------
 var toTopBtn = document.getElementById("toTopBtn");

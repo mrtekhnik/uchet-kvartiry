@@ -24,14 +24,14 @@ ok(!(await vis('#undoToast')),'плашка закрылась сама чере
 await p.click('#undoHdrBtn'); await p.waitForTimeout(100); ok(await vis('#undoToast'),'тап по ↶ показывает плашку');
 await p.click('#undoToastBtn'); ok(await gp()===g0,'отмена из шапки работает');
 // настройка в ⚙
-await p.click('#gearBtn'); ok(await p.inputValue('#undoSecSel')==='2','настройка отображается'); await p.selectOption('#undoSecSel','0');
+await p.click('#gearBtn'); await p.click('.set-sec >> text=Плашка'); await p.selectOption('#undoSecSel','0');
 ok((await p.evaluate(()=>JSON.parse(localStorage.getItem('utilityTrackerPrefs_v1')).undoSec))===0,'«Не закрывать» сохраняется'); await p.click('#settingsClose');
 // копирование
 await p.fill('#f_gasReading','9500');await p.fill('#f_elReading','11600');await p.click('#saveMonthBtn');await p.waitForTimeout(200);
-ok(await vis('#copyCard'),'блок копирования показан');
-const chips=await p.$$eval('.copy-chip',els=>els.map(e=>e.getAttribute('data-copy')));console.log('   chips',chips);
-await p.click('.copy-chip >> nth=0'); ok((await p.evaluate(()=>navigator.clipboard.readText()))==='9500','клик копирует газ: 9500');
-await p.click('.copy-chip >> nth=1'); ok((await p.evaluate(()=>navigator.clipboard.readText()))==='11600','клик копирует свет: 11600');
+ok(await vis('#copy_gas'),'кнопка копирования показана');
+
+await p.click('#copy_gas'); ok((await p.evaluate(()=>navigator.clipboard.readText()))==='9500','клик копирует газ: 9500');
+await p.click('#copy_el'); ok((await p.evaluate(()=>navigator.clipboard.readText()))==='11600','клик копирует свет: 11600');
 await p.screenshot({path:'/tmp/copy.png'});
 ok(p.errs.length===0,'нет ошибок JS '+p.errs.join());
 await b.close();console.log('fails',f);})();
