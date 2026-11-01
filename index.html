@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>Учёт коммунальных услуг</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#155A5F">
@@ -377,7 +377,7 @@
   .compact-card .total-row{padding-top:6px;margin-top:2px;}
   .compact-card .field label{margin-bottom:2px;font-size:calc(11.5px * var(--fs));}
   .compact-card .field input{padding:7px 10px;}
-  .save-block{position:sticky;bottom:var(--tabh,56px);background:var(--surface);z-index:5;padding-bottom:2px;}
+  .save-block{position:sticky;bottom:calc(var(--tabh,56px) + var(--kbh,0px));background:var(--surface);z-index:5;padding-bottom:2px;}
   #inputCard input{scroll-margin-bottom:110px;}
   body.kb-open{--tabh:0px;padding-bottom:0;}
   body.kb-open nav.tabbar, body.kb-open .to-top-btn{display:none !important;}
@@ -2500,7 +2500,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.19";
+var APP_VERSION = "1.20";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
@@ -3467,16 +3467,23 @@ document.getElementById("fitSel").addEventListener("change", function(){ prefs.f
   function isField(el){ return el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) && el.type!=="checkbox" && el.type!=="file"; }
   function setTabH(){ var t = document.querySelector("nav.tabbar"); if(t && !document.body.classList.contains("kb-open")) document.documentElement.style.setProperty("--tabh", t.offsetHeight+"px"); }
   setTabH(); window.addEventListener("resize", setTabH);
+  // запасной вариант: если клавиатура накрывает окно (layout viewport не уменьшился) — поднимаем блок на высоту клавиатуры
+  function setKbh(){
+    var vv = window.visualViewport, h = 0;
+    if(vv && document.body.classList.contains("kb-open")) h = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+    document.documentElement.style.setProperty("--kbh", h+"px");
+  }
+  if(window.visualViewport){ visualViewport.addEventListener("resize", setKbh); visualViewport.addEventListener("scroll", setKbh); }
   document.addEventListener("focusin", function(e){
     if(!isField(e.target) || !document.getElementById("tab-input").classList.contains("active")) return;
     if(!document.getElementById("inputCard").contains(e.target) && e.target.id!=="inputMonth") return;
-    clearTimeout(kbTimer); document.body.classList.add("kb-open");
+    clearTimeout(kbTimer); document.body.classList.add("kb-open"); setKbh(); setTimeout(setKbh,300);
     setTimeout(function(){ try{ e.target.scrollIntoView({block:"center", behavior:"smooth"}); }catch(_){} }, 250);
   });
   document.addEventListener("focusout", function(){
     clearTimeout(kbTimer);
     kbTimer = setTimeout(function(){
-      if(!isField(document.activeElement)){ document.body.classList.remove("kb-open"); setTabH(); fitInputCard(); }
+      if(!isField(document.activeElement)){ document.body.classList.remove("kb-open"); setKbh(); setTabH(); fitInputCard(); }
     }, 150);
   });
 })();
