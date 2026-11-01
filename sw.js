@@ -1,7 +1,7 @@
 // Service Worker. VERSION должен совпадать с APP_VERSION в index.html
 // (скрипт release.py меняет оба значения сразу). Изменился sw.js -> браузер
 // скачает новую версию в фоне и приложение покажет «Доступна новая версия».
-const VERSION = "1.18";
+const VERSION = "1.19";
 const CACHE = "uchet-" + VERSION;
 const FILES = [
   "./",

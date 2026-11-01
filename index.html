@@ -377,6 +377,10 @@
   .compact-card .total-row{padding-top:6px;margin-top:2px;}
   .compact-card .field label{margin-bottom:2px;font-size:calc(11.5px * var(--fs));}
   .compact-card .field input{padding:7px 10px;}
+  .save-block{position:sticky;bottom:var(--tabh,56px);background:var(--surface);z-index:5;padding-bottom:2px;}
+  #inputCard input{scroll-margin-bottom:110px;}
+  body.kb-open{--tabh:0px;padding-bottom:0;}
+  body.kb-open nav.tabbar, body.kb-open .to-top-btn{display:none !important;}
   .section-gap{height:2px;}
   .subtle-btn-row{display:flex;gap:8px;margin-top:6px;}
 
@@ -658,10 +662,12 @@
           </div>
         </div>
 
+        <div class="save-block">
         <div class="total-row"><span>Итого за месяц</span><span class="v" id="inputTotal">0 грн</span></div>
         <div class="save-row">
           <button class="btn-danger-text" id="deleteMonthBtn" style="display:none">Удалить</button>
           <button class="btn-primary" id="saveMonthBtn">Сохранить месяц</button>
+        </div>
         </div>
       </div>
 
@@ -861,8 +867,8 @@
       <div class="set-sec">Размер шрифта</div>
       <div class="font-seg" id="fontSeg"></div>
       <div class="set-sec">Форма ввода показаний</div>
-      <div class="hint">Масштаб формы ввода (вместе с текстом). «Авто» сжимает форму, только если она не помещается на экране.</div>
-      <select class="set-inp" id="fitSel"><option value="auto">Авто</option><option value="1">100%</option><option value="0.9">90%</option><option value="0.8">80%</option><option value="0.7">70%</option><option value="0.6">60%</option></select>
+      <div class="hint">Масштаб формы ввода (вместе с текстом), от 80% до 120%. «Авто» сжимает форму (не меньше 80%), только если она не помещается на экране.</div>
+      <select class="set-inp" id="fitSel"><option value="auto">Авто (только уменьшать)</option><option value="0.8">80%</option><option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.2">120%</option></select>
       <div class="hint" id="fitDiag"></div>
       <div class="set-sec">Плашка «Отменить»</div>
       <div class="hint">Закрывается сама через (шаги отмены остаются в шапке ↶ до закрытия приложения):</div>
@@ -2494,7 +2500,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.18";
+var APP_VERSION = "1.19";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
@@ -3441,7 +3447,7 @@ function fitInputCard(force){
     var tab = document.querySelector("nav.tabbar").getBoundingClientRect().top;
     var top = card.getBoundingClientRect().top + (window.pageYOffset||0);
     var h = card.getBoundingClientRect().height;
-    if(mode==="auto"){ var need = (tab - top - 8) / h; if(need < 1) z = Math.max(0.6, Math.round(need*100)/100); }
+    if(mode==="auto"){ var need = (tab - top - 8) / h; if(need < 1) z = Math.max(0.8, Math.round(need*100)/100); }
     else z = parseFloat(mode) || 1;
     if(z !== 1) card.style.zoom = String(z);
     lastFit = {z:z, inner:window.innerHeight, tab:Math.round(tab), top:Math.round(top), h:Math.round(h)};
@@ -3454,6 +3460,26 @@ function renderFitDiag(){
 }
 window.addEventListener("resize", function(){ fitInputCard(); });
 document.getElementById("fitSel").addEventListener("change", function(){ prefs.fitMode = this.value; savePrefs(); fitInputCard(true); });
+
+// ---------- клавиатура: прячем нижнюю панель, «Итого/Сохранить» остаются у нижнего края ----------
+(function(){
+  var kbTimer = null;
+  function isField(el){ return el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) && el.type!=="checkbox" && el.type!=="file"; }
+  function setTabH(){ var t = document.querySelector("nav.tabbar"); if(t && !document.body.classList.contains("kb-open")) document.documentElement.style.setProperty("--tabh", t.offsetHeight+"px"); }
+  setTabH(); window.addEventListener("resize", setTabH);
+  document.addEventListener("focusin", function(e){
+    if(!isField(e.target) || !document.getElementById("tab-input").classList.contains("active")) return;
+    if(!document.getElementById("inputCard").contains(e.target) && e.target.id!=="inputMonth") return;
+    clearTimeout(kbTimer); document.body.classList.add("kb-open");
+    setTimeout(function(){ try{ e.target.scrollIntoView({block:"center", behavior:"smooth"}); }catch(_){} }, 250);
+  });
+  document.addEventListener("focusout", function(){
+    clearTimeout(kbTimer);
+    kbTimer = setTimeout(function(){
+      if(!isField(document.activeElement)){ document.body.classList.remove("kb-open"); setTabH(); fitInputCard(); }
+    }, 150);
+  });
+})();
 
 // ---------- кнопка «Наверх» ----------
 var toTopBtn = document.getElementById("toTopBtn");
