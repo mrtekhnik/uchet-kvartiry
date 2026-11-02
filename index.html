@@ -331,11 +331,14 @@
   .fold-card:not(.folded) > .fold-head{margin-bottom:10px;}
   .fold-card.folded > *:not(.fold-head){display:none !important;}
   .set-sec{font-size:calc(14px * (1 + (var(--fs) - 1) * .4));font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:14px 0 6px;}
+  .card-sub{font-size:calc(12px * var(--fs));color:var(--muted);margin-top:2px;font-weight:600;}
   .set-card{background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);padding:0 12px 2px;margin:8px 0;}
   .set-card .set-sec{margin:0;padding:12px 0;}
   .set-card .set-grp{padding-bottom:10px;}
   .set-sec{cursor:pointer;display:flex;justify-content:space-between;align-items:center;}
   .set-sec::after{content:"▾";font-size:14px;transition:transform .15s;}
+  .set-sec.fixed{cursor:default;}
+  .set-sec.fixed::after{content:none;}
   .set-sec.folded::after{transform:rotate(-90deg);}
   .set-grp.folded{display:none;}
   .set-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:calc(16px * (1 + (var(--fs) - 1) * .4));}
@@ -506,7 +509,7 @@
 
       <div data-card="services" class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <h2 style="margin:0">Основные услуги</h2>
+          <div><h2 style="margin:0">Основные услуги</h2><div class="card-sub" id="svcSub"></div></div>
           <div class="seg" id="segSvc">
             <button class="seg-btn active" data-mode="month">Месяц</button>
             <button class="seg-btn" data-mode="year">Год</button>
@@ -519,7 +522,7 @@
 
       <div data-card="structure" class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <h2 style="margin:0">Структура расходов</h2>
+          <div><h2 style="margin:0">Структура расходов</h2><div class="card-sub" id="donutSub"></div></div>
           <div class="seg" id="segDonut">
             <button class="seg-btn active" data-mode="month">Месяц</button>
             <button class="seg-btn" data-mode="year">Год</button>
@@ -534,7 +537,7 @@
 
       <div data-card="trend" class="card" style="padding-left:8px;padding-right:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;padding:0 6px;margin-bottom:8px">
-          <h2 style="margin:0;padding:0">Динамика по месяцам</h2>
+          <div><h2 style="margin:0;padding:0">Динамика по месяцам</h2><div class="card-sub" id="trendSub"></div></div>
           <div class="seg" id="segTrend">
             <button class="seg-btn active" data-mode="year">Год</button>
             <button class="seg-btn" data-mode="range">Период</button>
@@ -857,6 +860,10 @@
       <select class="set-inp" id="syDelay"><option value="0">Сразу</option><option value="3600000">Через 1 ч</option><option value="10800000">Через 3 ч</option><option value="86400000">Через сутки</option></select>
       <div class="row2"><button class="btn-primary" id="sySave" style="padding:10px">Сохранить и проверить</button><button class="btn-secondary" id="syOff" style="text-align:center">Отключить</button></div>
       <div class="hint" id="sySt" style="margin-top:6px"></div>
+      <div class="set-sec">Экспорт в CSV</div>
+        <div class="info-note">Для открытия в Excel/Google Таблицах отдельно от этого приложения. В отличие от резервной копии — обратно уже не загрузить, только для просмотра/анализа.</div>
+        <button class="btn-secondary" id="exportMonthlyCsvBtn" style="width:100%;text-align:center;margin-bottom:8px">Показания и оплаты (.csv)</button>
+        <button class="btn-secondary" id="exportExtraCsvBtn" style="width:100%;text-align:center">Доп. расходы (.csv)</button>
       <div class="set-sec">Резервная копия</div>
         <div class="info-note">Все данные хранятся только в этом браузере на этом устройстве. Если очистить кэш, переустановить Chrome или перейти на новый телефон — данные пропадут. Регулярно сохраняйте копию файлом.</div>
         <div class="hint" id="lastBackupHint" style="margin-bottom:10px"></div>
@@ -867,11 +874,7 @@
         <div class="hint" id="backupStatus" style="margin-top:8px"></div>
         <div style="height:14px"></div>
         <button class="btn-danger-text" id="resetAllBtn" style="width:100%;text-align:center;border:1px solid var(--danger-soft);border-radius:var(--radius-sm);padding:10px">Удалить все данные и начать заново</button>
-      <div class="set-sec">Экспорт в CSV</div>
-        <div class="info-note">Для открытия в Excel/Google Таблицах отдельно от этого приложения. В отличие от резервной копии — обратно уже не загрузить, только для просмотра/анализа.</div>
-        <button class="btn-secondary" id="exportMonthlyCsvBtn" style="width:100%;text-align:center;margin-bottom:8px">Показания и оплаты (.csv)</button>
-        <button class="btn-secondary" id="exportExtraCsvBtn" style="width:100%;text-align:center">Доп. расходы (.csv)</button>
-      <div class="set-sec">Обновление и версия</div>
+      <div class="set-sec">О приложении</div>
       <div class="app-footer" id="appFooter"></div>
       <button class="btn-secondary" id="syncNowBtn" style="width:100%;text-align:center;margin-bottom:8px">⟳ Синхронизировать</button>
       <button class="btn-secondary" id="checkUpdateBtn" style="width:100%;text-align:center">🔄 Проверить обновление</button>
@@ -1521,6 +1524,7 @@ function renderTrendChart(){
   }
 
   var keys1 = periodSelectionToKeys(1) || [];
+  (function(){ var k2 = periodSelectionToKeys(2), t = keysText(keys1); if(k2 && k2.length) t += "  ·  сравнение: "+keysText(k2); document.getElementById("trendSub").textContent = t; })();
   var keys2raw = periodSelectionToKeys(2);
   var isYear1 = trendMode1==="year";
   var isYear2 = keys2raw && document.getElementById("trendPeriod2").value.indexOf("year:")===0;
@@ -1649,6 +1653,21 @@ function renderReminders(){
   }).join("");
 }
 
+var MONTH_FULL = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+function keysText(keys){
+  if(!keys || !keys.length) return "";
+  var f = keys[0], l = keys[keys.length-1];
+  if(keys.length===1) return MONTH_FULL[monthNum(f)-1]+" "+yearOf(f);
+  if(keys.length===12 && f.slice(5)==="01" && yearOf(f)===yearOf(l)) return yearOf(f)+" год";
+  var mn = function(k){ return MONTH_NAMES[monthNum(k)-1]; };
+  if(yearOf(f)===yearOf(l)) return mn(f)+" – "+mn(l)+" "+yearOf(f)+" · "+keys.length+" мес.";
+  return mn(f)+" "+yearOf(f).slice(2)+" – "+mn(l)+" "+yearOf(l).slice(2)+" · "+keys.length+" мес.";
+}
+function modeKeys(mode){
+  if(mode==="year"){ var y = mainYearEl.value, a = []; for(var i=1;i<=12;i++) a.push(y+"-"+(i<10?"0":"")+i); return a; }
+  if(mode==="range") return monthRange(document.getElementById("mainRangeStart").value, document.getElementById("mainRangeEnd").value);
+  return [mainMonthEl.value];
+}
 function renderMain(){
   renderReminders();
   updateBackToTodayBtn();
@@ -1687,6 +1706,8 @@ function renderMain(){
     return svcTotalsForMonth(m, qty);
   }
 
+  document.getElementById("svcSub").textContent = keysText(modeKeys(svcMode));
+  document.getElementById("donutSub").textContent = keysText(modeKeys(donutMode));
   var svcBars = svcForMode(svcMode);
   var maxSvc = Math.max.apply(null, svcBars.map(function(s){return s.val;}).concat([1]));
   document.getElementById("svcMonthBars").innerHTML = svcBars.map(function(s){
@@ -2493,7 +2514,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.25";
+var APP_VERSION = "1.26";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
@@ -2815,6 +2836,7 @@ document.getElementById("settingsSheetBg").addEventListener("click", function(e)
     h.parentNode.insertBefore(card, n);
     card.appendChild(h); card.appendChild(grp);
     var key = h.textContent.trim();
+    if(key==="Резервная копия" || key==="О приложении"){ h.classList.add("fixed"); return; }   // не сворачиваются
     var folded = key in prefs.setFold ? !!prefs.setFold[key] : true;      // по умолчанию свёрнуты
     h.classList.toggle("folded", folded); grp.classList.toggle("folded", folded);
     h.addEventListener("click", function(){
