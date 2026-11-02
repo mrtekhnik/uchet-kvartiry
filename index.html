@@ -329,6 +329,9 @@
   .fold-card:not(.folded) > .fold-head{margin-bottom:10px;}
   .fold-card.folded > *:not(.fold-head){display:none !important;}
   .set-sec{font-size:calc(14px * (1 + (var(--fs) - 1) * .4));font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:14px 0 6px;}
+  .set-card{background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);padding:0 12px 2px;margin:8px 0;}
+  .set-card .set-sec{margin:0;padding:12px 0;}
+  .set-card .set-grp{padding-bottom:10px;}
   .set-sec{cursor:pointer;display:flex;justify-content:space-between;align-items:center;}
   .set-sec::after{content:"▾";font-size:14px;transition:transform .15s;}
   .set-sec.folded::after{transform:rotate(-90deg);}
@@ -789,37 +792,6 @@
                 <div id="eventList"></div>
       </div>
 
-      <div class="card">
-        <h2>Вид и настройки</h2>
-        <div class="info-note">Тема, задний фон, размер шрифта, какие карточки показывать на Главной.</div>
-        <button class="btn-secondary" id="openSettingsBtn" style="width:100%;text-align:center">⚙ Открыть настройки вида</button>
-      </div>
-
-      <div class="card">
-        <h2>Резервная копия</h2>
-        <div class="info-note">Все данные хранятся только в этом браузере на этом устройстве. Если очистить кэш, переустановить Chrome или перейти на новый телефон — данные пропадут. Регулярно сохраняйте копию файлом.</div>
-        <div class="hint" id="lastBackupHint" style="margin-bottom:10px"></div>
-        <button class="btn-primary" id="backupExportBtn">Скачать резервную копию (.json)</button>
-        <div style="height:10px"></div>
-        <label class="btn-secondary" style="display:block;text-align:center;width:100%" for="backupImportInput">Восстановить из файла</label>
-        <input type="file" id="backupImportInput" accept="application/json" style="display:none">
-        <div class="hint" id="backupStatus" style="margin-top:8px"></div>
-        <div style="height:14px"></div>
-        <button class="btn-danger-text" id="resetAllBtn" style="width:100%;text-align:center;border:1px solid var(--danger-soft);border-radius:var(--radius-sm);padding:10px">Удалить все данные и начать заново</button>
-      </div>
-
-      <div class="card">
-        <h2>Экспорт в CSV</h2>
-        <div class="info-note">Для открытия в Excel/Google Таблицах отдельно от этого приложения. В отличие от резервной копии — обратно уже не загрузить, только для просмотра/анализа.</div>
-        <button class="btn-secondary" id="exportMonthlyCsvBtn" style="width:100%;text-align:center;margin-bottom:8px">Показания и оплаты (.csv)</button>
-        <button class="btn-secondary" id="exportExtraCsvBtn" style="width:100%;text-align:center">Доп. расходы (.csv)</button>
-      </div>
-
-      <div class="app-footer" id="appFooter"></div>
-      <button class="btn-secondary" id="syncNowBtn" style="width:100%;text-align:center;margin-bottom:8px">⟳ Синхронизировать</button>
-      <button class="btn-secondary" id="checkUpdateBtn" style="width:100%;text-align:center">🔄 Проверить обновление</button>
-      <div class="hint" id="updateStatus" style="text-align:center;margin:6px 0 14px"></div>
-
     </section>
 
   </main>
@@ -883,6 +855,25 @@
       <select class="set-inp" id="syDelay"><option value="0">Сразу</option><option value="3600000">Через 1 ч</option><option value="10800000">Через 3 ч</option><option value="86400000">Через сутки</option></select>
       <div class="row2"><button class="btn-primary" id="sySave" style="padding:10px">Сохранить и проверить</button><button class="btn-secondary" id="syOff" style="text-align:center">Отключить</button></div>
       <div class="hint" id="sySt" style="margin-top:6px"></div>
+      <div class="set-sec">Резервная копия</div>
+        <div class="info-note">Все данные хранятся только в этом браузере на этом устройстве. Если очистить кэш, переустановить Chrome или перейти на новый телефон — данные пропадут. Регулярно сохраняйте копию файлом.</div>
+        <div class="hint" id="lastBackupHint" style="margin-bottom:10px"></div>
+        <button class="btn-primary" id="backupExportBtn">Скачать резервную копию (.json)</button>
+        <div style="height:10px"></div>
+        <label class="btn-secondary" style="display:block;text-align:center;width:100%" for="backupImportInput">Восстановить из файла</label>
+        <input type="file" id="backupImportInput" accept="application/json" style="display:none">
+        <div class="hint" id="backupStatus" style="margin-top:8px"></div>
+        <div style="height:14px"></div>
+        <button class="btn-danger-text" id="resetAllBtn" style="width:100%;text-align:center;border:1px solid var(--danger-soft);border-radius:var(--radius-sm);padding:10px">Удалить все данные и начать заново</button>
+      <div class="set-sec">Экспорт в CSV</div>
+        <div class="info-note">Для открытия в Excel/Google Таблицах отдельно от этого приложения. В отличие от резервной копии — обратно уже не загрузить, только для просмотра/анализа.</div>
+        <button class="btn-secondary" id="exportMonthlyCsvBtn" style="width:100%;text-align:center;margin-bottom:8px">Показания и оплаты (.csv)</button>
+        <button class="btn-secondary" id="exportExtraCsvBtn" style="width:100%;text-align:center">Доп. расходы (.csv)</button>
+      <div class="set-sec">Обновление и версия</div>
+      <div class="app-footer" id="appFooter"></div>
+      <button class="btn-secondary" id="syncNowBtn" style="width:100%;text-align:center;margin-bottom:8px">⟳ Синхронизировать</button>
+      <button class="btn-secondary" id="checkUpdateBtn" style="width:100%;text-align:center">🔄 Проверить обновление</button>
+      <div class="hint" id="updateStatus" style="text-align:center;margin:6px 0 14px"></div>
       <div class="hint set-end" style="margin-top:8px">Настройки вида хранятся в этом браузере и не входят в резервную копию данных.</div>
       <button class="btn-primary" id="settingsClose" style="margin-top:12px">Готово</button>
     </div>
@@ -2500,7 +2491,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.23";
+var APP_VERSION = "1.24";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
@@ -2804,7 +2795,6 @@ function rerenderCharts(){ try{ renderMain(); }catch(e){} }
 function openSettings(){ renderSettings(); renderSyncSettings(); document.getElementById("fitSel").value = fitMode(); renderFitDiag(); document.getElementById("undoSecSel").value = String(undoSeconds()); document.getElementById("settingsSheetBg").classList.add("show"); }
 function closeSettings(){ document.getElementById("settingsSheetBg").classList.remove("show"); }
 document.getElementById("gearBtn").addEventListener("click", openSettings);
-document.getElementById("openSettingsBtn").addEventListener("click", openSettings);
 document.getElementById("settingsClose").addEventListener("click", closeSettings);
 document.getElementById("settingsSheetBg").addEventListener("click", function(e){ if(e.target===this) closeSettings(); });
 
@@ -2818,7 +2808,9 @@ document.getElementById("settingsSheetBg").addEventListener("click", function(e)
     while(n && !n.classList.contains("set-sec") && !n.classList.contains("set-end")){
       var nx = n.nextElementSibling; grp.appendChild(n); n = nx;
     }
-    h.parentNode.insertBefore(grp, n);
+    var card = document.createElement("div"); card.className = "set-card";
+    h.parentNode.insertBefore(card, n);
+    card.appendChild(h); card.appendChild(grp);
     var key = h.textContent.trim();
     var folded = key in prefs.setFold ? !!prefs.setFold[key] : true;      // по умолчанию свёрнуты
     h.classList.toggle("folded", folded); grp.classList.toggle("folded", folded);
