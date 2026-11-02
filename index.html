@@ -266,6 +266,8 @@
   .app-footer{font-size:calc(11.5px * var(--fs));color:var(--muted);text-align:center;line-height:1.6;padding:6px 8px 14px;}
   .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:60;display:none;align-items:flex-start;justify-content:center;}
   .sheet-bg.show{display:flex;}
+  #settingsSheetBg{bottom:var(--tabh,56px);}
+  #settingsSheetBg .sheet{max-height:100%;}
   .sheet{background:var(--surface);width:100%;max-width:480px;max-height:100vh;overflow-y:auto;border-radius:0 0 16px 16px;padding:12px 14px 14px;}
   .sheet .hint{font-size:calc(13.5px * (1 + (var(--fs) - 1) * .4));}
   .sheet h3{margin:0 0 2px;font-size:calc(19px * (1 + (var(--fs) - 1) * .4));}
@@ -2491,7 +2493,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.24";
+var APP_VERSION = "1.25";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
@@ -2796,6 +2798,7 @@ function openSettings(){ renderSettings(); renderSyncSettings(); document.getEle
 function closeSettings(){ document.getElementById("settingsSheetBg").classList.remove("show"); }
 document.getElementById("gearBtn").addEventListener("click", openSettings);
 document.getElementById("settingsClose").addEventListener("click", closeSettings);
+document.querySelectorAll("nav.tabbar .tab-btn").forEach(function(b){ b.addEventListener("click", closeSettings); });
 document.getElementById("settingsSheetBg").addEventListener("click", function(e){ if(e.target===this) closeSettings(); });
 
 // ---------- сворачиваемые группы в настройках ----------
