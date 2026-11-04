@@ -396,6 +396,10 @@
   h3.sub{font-size:calc(13px * var(--fs));font-weight:700;color:var(--ink);margin:14px 0 8px;}
   .info-note{font-size:calc(11.5px * var(--fs));color:var(--muted);margin-top:-4px;margin-bottom:10px;line-height:1.4;}
   .info-head-row{display:none;}
+  .info-view-row{padding:8px 0;border-bottom:1px solid var(--line);}
+  .info-view-row:last-child{border-bottom:0;}
+  .ivl{font-size:calc(12px * var(--fs));color:var(--muted);font-weight:600;}
+  .ivv{font-size:calc(15px * var(--fs));color:var(--ink);margin-top:2px;white-space:pre-wrap;overflow-wrap:anywhere;user-select:text;-webkit-user-select:text;}
   .info-row{margin-bottom:10px;}
   .info-row-top{display:flex;gap:6px;align-items:flex-start;margin-bottom:4px;}
   .info-order-btns{display:flex;flex-direction:column;gap:2px;flex:none;}
@@ -759,7 +763,8 @@
         <h2>Информация по квартире</h2>
                 <div class="info-head-row"><span>Название</span><span>Значение</span></div>
         <div id="infoFields"></div>
-        <button class="btn-secondary" id="addInfoFieldBtn" style="width:100%;text-align:center;margin-top:4px">+ Добавить поле</button>
+        <button class="btn-secondary" id="addInfoFieldBtn" style="width:100%;text-align:center;margin-top:4px;display:none">+ Добавить поле</button>
+        <button class="btn-secondary" id="infoEditBtn" style="width:100%;text-align:center;margin-top:8px">✎ Редактировать</button>
         <div class="hint" id="infoSaveStatus" style="min-height:14px;margin-top:8px"></div>
       </div>
 
@@ -2304,7 +2309,7 @@ function esc(s){ return (s||"").replace(/"/g,"&quot;"); }
 
 function autoGrow(el){
   el.style.height = "auto";
-  el.style.height = (el.scrollHeight) + "px";
+  if(el.scrollHeight) el.style.height = el.scrollHeight + "px";      // в скрытой/свёрнутой карточке высоту не трогаем
 }
 
 function moveInfoRow(id, dir){
@@ -2319,10 +2324,19 @@ function moveInfoRow(id, dir){
   renderInfoFields();
 }
 
+var infoEdit = false;
 function renderInfoFields(){
   var wrap = document.getElementById("infoFields");
+  document.getElementById("addInfoFieldBtn").style.display = infoEdit ? "block" : "none";
+  document.getElementById("infoEditBtn").textContent = infoEdit ? "✓ Готово" : "✎ Редактировать";
   if(!data.info.length){
-    wrap.innerHTML = '<div class="empty-state">Полей пока нет — добавьте первое кнопкой ниже.</div>';
+    wrap.innerHTML = '<div class="empty-state">Полей пока нет — нажмите «Редактировать» и добавьте первое.</div>';
+    return;
+  }
+  if(!infoEdit){
+    wrap.innerHTML = data.info.map(function(row){
+      return '<div class="info-view-row"><div class="ivl">'+escH(row.label||"(без названия)")+'</div><div class="ivv">'+escH(row.value||"—")+'</div></div>';
+    }).join("");
     return;
   }
   wrap.innerHTML = data.info.map(function(row, idx){
@@ -2347,6 +2361,7 @@ function renderInfoFields(){
     window._infoStatusTimer = setTimeout(function(){ st.textContent = ""; }, 2500);
   }
 
+  requestAnimationFrame(function(){ wrap.querySelectorAll("textarea").forEach(autoGrow); });
   wrap.querySelectorAll("[data-info-label]").forEach(function(ta){
     autoGrow(ta);
     ta.addEventListener("input", function(){ autoGrow(ta); });
@@ -2396,6 +2411,9 @@ function renderInfoFields(){
   });
 }
 
+document.getElementById("infoEditBtn").addEventListener("click", function(){
+  infoEdit = !infoEdit; renderInfoFields();
+});
 document.getElementById("addInfoFieldBtn").addEventListener("click", function(){
   data.info.push({id:"i"+Date.now(), label:"", value:""});
   save();
@@ -2514,7 +2532,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.26";
+var APP_VERSION = "1.27";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
