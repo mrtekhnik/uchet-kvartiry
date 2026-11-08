@@ -171,6 +171,10 @@
   .yearbars{display:flex;align-items:flex-end;gap:3px;height:110px;margin-top:28px;border-bottom:1px solid var(--line);}
   .yearbars .yb-slot{flex:1 0 22px;width:22px;display:flex;align-items:flex-end;gap:2px;height:100%;min-width:22px;position:relative;}
   .yearbars .yb{flex:1;background:var(--bar-bg);border-radius:3px 3px 0 0;position:relative;min-height:2px;}
+  .yearbars .yb-slot{cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .yearbars .yb-slot.sel .yb:not(.series-b){background:var(--accent);}
+  .trend-info{font-size:calc(12.5px * var(--fs));color:var(--muted);font-weight:600;padding:0 6px 6px;min-height:0;}
+  .trend-info:empty{display:none;}
   .yearbars .yb.cur{background:var(--primary);}
   .yearbars .yb.series-a{background:var(--primary);}
   .yearbars .yb.series-b{background:var(--accent);}
@@ -570,6 +574,7 @@
           </div>
         </div>
         <div class="legend" id="trendLegend" style="padding:0 6px 6px;display:none"></div>
+        <div class="trend-info" id="trendInfo"></div>
         <div class="yearchart">
           <div class="yaxis" id="yAxis"></div>
           <div class="ybars-wrap">
@@ -842,6 +847,8 @@
       <h3>Вид и настройки</h3>
       <div class="set-sec">Карточки на Главной</div>
       <div id="cardToggles"></div>
+      <div class="set-sec">Диаграмма «Динамика»</div>
+      <label class="set-row"><span>Тап по месяцу переключает «Основные услуги» и «Структуру расходов» на этот месяц</span><input type="checkbox" id="trendPickChk"></label>
       <div class="set-sec">Тема</div>
       <div class="theme-grid" id="themeGrid"></div>
       <div class="set-sec">Задний фон</div>
@@ -1516,6 +1523,31 @@ function periodLabel(key, isYearMode){
   return isYearMode ? MONTH_NAMES[monthNum(key)-1] : (MONTH_NAMES[monthNum(key)-1] + " " + yearOf(key).slice(2));
 }
 
+var trendSelKey = null;
+function trendInfoText(keys1, metric){
+  var el = document.getElementById("trendInfo");
+  if(!trendSelKey || keys1.indexOf(trendSelKey)<0){ el.textContent = ""; return; }
+  var v = data.monthly[trendSelKey] ? metric.calc(trendSelKey) : null;
+  var dec = metric.decimals || 0;
+  var txt = MONTH_FULL[monthNum(trendSelKey)-1]+" "+yearOf(trendSelKey)+" — "+metric.label.replace(/, .*$/,"")+": "+(v==null?"нет данных":v.toLocaleString("ru-RU",{minimumFractionDigits:dec,maximumFractionDigits:dec})+(metric.unit?" "+metric.unit:""));
+  if(prefs.trendPick!==false) txt += " · показан в «Услугах» и «Структуре»";
+  el.textContent = txt;
+}
+document.getElementById("yearBars").addEventListener("click", function(e){
+  var slot = e.target.closest(".yb-slot"); if(!slot) return;
+  var keys1 = periodSelectionToKeys(1) || [];
+  var key = keys1[parseInt(slot.getAttribute("data-i"),10)];
+  if(!key) return;
+  trendSelKey = (trendSelKey===key) ? null : key;      // повторный тап снимает выбор
+  if(trendSelKey && prefs.trendPick!==false){
+    mainMonthEl.value = key;
+    svcMode = "month"; donutMode = "month";
+    ["segSvc","segDonut"].forEach(function(id){
+      document.getElementById(id).querySelectorAll(".seg-btn").forEach(function(b){ b.classList.toggle("active", b.getAttribute("data-mode")==="month"); });
+    });
+    renderMain();
+  } else renderTrendChart();
+});
 function renderTrendChart(){
   var metricKey = document.getElementById("trendMetric").value;
   var metric = METRICS.filter(function(m){return m.key===metricKey;})[0] || METRICS[0];
@@ -1534,6 +1566,7 @@ function renderTrendChart(){
   var isYear1 = trendMode1==="year";
   var isYear2 = keys2raw && document.getElementById("trendPeriod2").value.indexOf("year:")===0;
 
+  trendInfoText(keys1, metric);
   var slotCount = Math.max(keys1.length, keys2raw ? keys2raw.length : 0);
   var labelKeys = keys1.length>=slotCount ? keys1 : keys2raw;
   var labelsIsYear = keys1.length>=slotCount ? isYear1 : isYear2;
@@ -1591,11 +1624,11 @@ function renderTrendChart(){
           (v1!=null? '<span class="la">'+fmtVal(v1)+'</span>' : '')+
           (v2!=null? '<span class="lb">'+fmtVal(v2)+'</span>' : '')+
         '</div>' : '';
-      return '<div class="yb-slot">'+label+bar1+bar2+'</div>';
+      return '<div class="yb-slot'+(keys1[i]&&keys1[i]===trendSelKey?' sel':'')+'" data-i="'+i+'">'+label+bar1+bar2+'</div>';
     }
     var bar1 = '<div class="yb'+(isCur?" cur":"")+'" style="height:'+h1+'%">'+
       (v1!=null? '<span class="ybval">'+fmtVal(v1)+'</span>' : '')+'</div>';
-    return '<div class="yb-slot">'+bar1+'</div>';
+    return '<div class="yb-slot'+(keys1[i]&&keys1[i]===trendSelKey?' sel':'')+'" data-i="'+i+'">'+bar1+'</div>';
   }).join("");
 
   document.getElementById("yearLabelsRow").innerHTML = (labelKeys||[]).map(function(k){
@@ -2532,7 +2565,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.28";
+var APP_VERSION = "1.29";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
@@ -2791,6 +2824,9 @@ function renderSettings(){
       prefs.cards[i.getAttribute("data-card-toggle")] = i.checked; savePrefs(); applyPrefs();
     });
   });
+  var tp = document.getElementById("trendPickChk");
+  tp.checked = prefs.trendPick!==false;
+  tp.onchange = function(){ prefs.trendPick = tp.checked; savePrefs(); renderTrendChart(); };
   var tg = document.getElementById("themeGrid");
   tg.innerHTML = Object.keys(THEMES).map(function(k){
     var t = THEMES[k];
