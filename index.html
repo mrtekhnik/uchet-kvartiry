@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+<script>try{if(JSON.parse(localStorage.getItem('utilityTrackerLock_v1')||'{}').hash)document.documentElement.classList.add('pre-lock');}catch(e){}</script>
+<style>.pre-lock body{visibility:hidden}.pre-lock #lockScreen{visibility:visible}</style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>Учёт коммунальных услуг</title>
@@ -335,6 +337,12 @@
   .fold-card:not(.folded) > .fold-head{margin-bottom:10px;}
   .fold-card.folded > *:not(.fold-head){display:none !important;}
   .set-sec{font-size:calc(14px * (1 + (var(--fs) - 1) * .4));font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:14px 0 6px;}
+  .lock-screen{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;}
+  .lock-box{width:100%;max-width:360px;text-align:center;}
+  .lock-ico{font-size:calc(44px * var(--fs));}
+  .lock-title{font-size:calc(20px * var(--fs));font-weight:700;margin:6px 0 16px;color:var(--ink);}
+  .lock-err{min-height:20px;color:var(--danger);font-size:calc(13px * var(--fs));margin:6px 0;}
+  body.locked{overflow:hidden;}
   .card-sub{font-size:calc(12px * var(--fs));color:var(--muted);margin-top:2px;font-weight:600;}
   .set-card{background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);padding:0 12px 2px;margin:8px 0;}
   .set-card .set-sec{margin:0;padding:12px 0;}
@@ -832,6 +840,18 @@
 
   <div class="busy-bg" id="busyBg"><div class="busy-box" id="busyTxt">Синхронизация…</div></div>
   <div class="msg-toast" id="msgToast"></div>
+  <div class="lock-screen" id="lockScreen" style="display:none">
+    <div class="lock-box">
+      <div class="lock-ico">🔒</div>
+      <div class="lock-title">Учёт квартиры</div>
+      <input class="set-inp" id="lockPw" type="password" placeholder="Пароль или PIN" autocomplete="current-password" autocapitalize="off">
+      <div class="lock-err" id="lockErr"></div>
+      <button class="btn-primary" id="lockGo" style="width:100%">Войти</button>
+      <button class="btn-secondary" id="lockBioBtn" style="width:100%;text-align:center;margin-top:8px;display:none">👆 Войти по биометрии</button>
+      <button class="btn-danger-text" id="lockForgot" style="margin-top:14px;background:none;border:0;text-decoration:underline">Забыли пароль?</button>
+    </div>
+  </div>
+
 
   <div class="sheet-bg" id="conflictSheetBg">
     <div class="sheet">
@@ -862,6 +882,27 @@
       <div class="set-sec">Плашка «Отменить»</div>
       <div class="hint">Закрывается сама через (шаги отмены остаются в шапке ↶ до закрытия приложения):</div>
       <select class="set-inp" id="undoSecSel"><option value="0">Не закрывать</option><option value="10">10 секунд</option><option value="30">30 секунд</option><option value="60">1 минута</option><option value="300">5 минут</option></select>
+      <div class="set-sec">Защита входом</div>
+      <div class="hint" id="lockHint" style="margin-bottom:8px">Пароль (или PIN) при открытии приложения. Это защита экрана от посторонних, данные в браузере при этом не шифруются. Всё необязательно.</div>
+      <div id="lockOff">
+        <button class="btn-secondary" id="lockEnableBtn" style="width:100%;text-align:center">🔒 Включить защиту паролем</button>
+      </div>
+      <div id="lockSetup" style="display:none">
+        <div class="hint">Новый пароль или PIN (минимум 4 символа)</div>
+        <input class="set-inp" id="lockNew1" type="password" autocomplete="new-password" autocapitalize="off">
+        <div class="hint">Повторите</div>
+        <input class="set-inp" id="lockNew2" type="password" autocomplete="new-password" autocapitalize="off">
+        <div class="hint" id="lockSetupErr" style="color:var(--danger)"></div>
+        <div style="display:flex;gap:8px;margin-top:6px"><button class="btn-secondary" id="lockSetupCancel" style="flex:1;text-align:center">Отмена</button><button class="btn-primary" id="lockSetupSave" style="flex:1">Сохранить</button></div>
+      </div>
+      <div id="lockOn" style="display:none">
+        <label class="set-row"><span>Вход по биометрии (отпечаток / лицо)</span><input type="checkbox" id="lockBioChk"></label>
+        <div class="hint" id="lockBioNote"></div>
+        <div class="hint">Блокировать</div>
+        <select class="set-inp" id="lockTimeout"><option value="0">Сразу при сворачивании</option><option value="60000">Через 1 мин</option><option value="300000">Через 5 мин</option><option value="900000">Через 15 мин</option><option value="-1">Только при запуске</option></select>
+        <div style="display:flex;gap:8px;margin-top:8px"><button class="btn-secondary" id="lockChangeBtn" style="flex:1;text-align:center">Сменить пароль</button><button class="btn-secondary" id="lockOffBtn" style="flex:1;text-align:center">Отключить</button></div>
+        <button class="btn-secondary" id="lockNowBtn" style="width:100%;text-align:center;margin-top:8px">🔒 Заблокировать сейчас</button>
+      </div>
       <div class="set-sec">Синхронизация через GitHub</div>
       <div class="hint" style="margin-bottom:8px">Телефон и компьютер обмениваются данными через ваш <b>приватный</b> репозиторий по кнопке ⟳. Подключение общее для всех приложений на mrtekhnik.github.io: если оно уже настроено в другом приложении, здесь ничего вводить не нужно.</div>
       <div class="hint">Репозиторий (имя/репозиторий)</div>
@@ -2565,7 +2606,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.29";
+var APP_VERSION = "1.30";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
@@ -2824,6 +2865,7 @@ function renderSettings(){
       prefs.cards[i.getAttribute("data-card-toggle")] = i.checked; savePrefs(); applyPrefs();
     });
   });
+  if(window.__renderLockSettings) window.__renderLockSettings();
   var tp = document.getElementById("trendPickChk");
   tp.checked = prefs.trendPick!==false;
   tp.onchange = function(){ prefs.trendPick = tp.checked; savePrefs(); renderTrendChart(); };
@@ -3576,6 +3618,137 @@ document.getElementById("fitSel").addEventListener("change", function(){ prefs.f
   });
   document.addEventListener("focusout", function(){ setTimeout(check, 150); });
   ["click","touchend","visibilitychange","pageshow"].forEach(function(ev){ document.addEventListener(ev, function(){ setTimeout(check, 200); }, true); });
+})();
+
+// ============================================================
+// ВХОД ПО ПАРОЛЮ И БИОМЕТРИИ (необязательно; защита экрана, данные не шифруются)
+// ============================================================
+(function(){
+  var LOCK_KEY = "utilityTrackerLock_v1";
+  var cfg = {}; try{ cfg = JSON.parse(localStorage.getItem(LOCK_KEY)||"{}") || {}; }catch(e){ cfg = {}; }
+  function saveCfg(){ try{ localStorage.setItem(LOCK_KEY, JSON.stringify(cfg)); }catch(e){} }
+  var $ = function(id){ return document.getElementById(id); };
+  var hiddenAt = 0, fails = 0, waitUntil = 0;
+  var hasCrypto = !!(window.crypto && crypto.subtle);
+  function b64(buf){ var a = new Uint8Array(buf), s = ""; for(var i=0;i<a.length;i++) s += String.fromCharCode(a[i]); return btoa(s); }
+  function unb64(t){ var s = atob(t), a = new Uint8Array(s.length); for(var i=0;i<s.length;i++) a[i] = s.charCodeAt(i); return a; }
+  function hashPw(pw, saltB64){
+    var enc = new TextEncoder();
+    return crypto.subtle.importKey("raw", enc.encode(pw), "PBKDF2", false, ["deriveBits"]).then(function(k){
+      return crypto.subtle.deriveBits({name:"PBKDF2", salt:unb64(saltB64), iterations:120000, hash:"SHA-256"}, k, 256);
+    }).then(b64);
+  }
+  function enabled(){ return !!cfg.hash; }
+  function bioSupported(){ return !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.create); }
+
+  function lock(){
+    if(!enabled()) return;
+    $("lockScreen").style.display = "flex"; document.body.classList.add("locked");
+    $("lockPw").value = ""; $("lockErr").textContent = "";
+    $("lockBioBtn").style.display = cfg.cred ? "block" : "none";
+    var sheet = document.getElementById("settingsSheetBg"); if(sheet) sheet.classList.remove("show");
+    if(cfg.cred) setTimeout(bioLogin, 300); else setTimeout(function(){ try{ $("lockPw").focus(); }catch(e){} }, 150);
+  }
+  function unlock(){
+    $("lockScreen").style.display = "none"; document.body.classList.remove("locked"); document.documentElement.classList.remove("pre-lock");
+    fails = 0; $("lockPw").value = "";
+  }
+  function tryPw(){
+    var now = Date.now();
+    if(now < waitUntil){ $("lockErr").textContent = "Подождите "+Math.ceil((waitUntil-now)/1000)+" с"; return; }
+    var pw = $("lockPw").value; if(!pw) return;
+    hashPw(pw, cfg.salt).then(function(h){
+      if(h===cfg.hash){ unlock(); return; }
+      fails++; $("lockPw").value = "";
+      if(fails>=5){ waitUntil = Date.now()+30000; fails = 0; $("lockErr").textContent = "Слишком много попыток. Подождите 30 с."; }
+      else $("lockErr").textContent = "Неверный пароль";
+    });
+  }
+  function bioLogin(){
+    if(!cfg.cred) return;
+    var ch = crypto.getRandomValues(new Uint8Array(32));
+    navigator.credentials.get({publicKey:{challenge:ch, allowCredentials:[{id:unb64(cfg.cred), type:"public-key", transports:["internal"]}], userVerification:"required", timeout:60000}})
+      .then(function(){ unlock(); })
+      .catch(function(){ try{ $("lockPw").focus(); }catch(e){} });
+  }
+  function bioRegister(){
+    var ch = crypto.getRandomValues(new Uint8Array(32)), uid = crypto.getRandomValues(new Uint8Array(16));
+    return navigator.credentials.create({publicKey:{
+      challenge:ch, rp:{name:"Учёт квартиры"}, user:{id:uid, name:"owner", displayName:"Владелец"},
+      pubKeyCredParams:[{type:"public-key", alg:-7},{type:"public-key", alg:-257}],
+      authenticatorSelection:{authenticatorAttachment:"platform", userVerification:"required", residentKey:"discouraged"}, timeout:60000
+    }}).then(function(c){ cfg.cred = b64(c.rawId); saveCfg(); });
+  }
+
+  // --- настройки
+  function renderLockSettings(){
+    var on = enabled();
+    $("lockOff").style.display = on ? "none" : "block";
+    $("lockOn").style.display = on ? "block" : "none";
+    if(!on) $("lockSetup").style.display = "none";
+    $("lockBioChk").checked = !!cfg.cred;
+    $("lockTimeout").value = String(cfg.timeout==null ? 60000 : cfg.timeout);
+    var note = "";
+    if(!bioSupported()) note = "Биометрия в этом браузере недоступна.";
+    else if(!hasCrypto) note = "Нужно открывать приложение по https.";
+    $("lockBioNote").textContent = note; $("lockBioChk").disabled = !!note;
+    $("lockEnableBtn").disabled = !hasCrypto;
+  }
+  function showSetup(){ $("lockSetup").style.display = "block"; $("lockOff").style.display = "none"; $("lockNew1").value = ""; $("lockNew2").value = ""; $("lockSetupErr").textContent = ""; $("lockNew1").focus(); }
+  $("lockEnableBtn").addEventListener("click", showSetup);
+  $("lockChangeBtn").addEventListener("click", function(){ $("lockOn").style.display = "none"; showSetup(); });
+  $("lockSetupCancel").addEventListener("click", renderLockSettings);
+  $("lockSetupSave").addEventListener("click", function(){
+    var a = $("lockNew1").value, b = $("lockNew2").value;
+    if(a.length<4){ $("lockSetupErr").textContent = "Минимум 4 символа"; return; }
+    if(a!==b){ $("lockSetupErr").textContent = "Пароли не совпадают"; return; }
+    var salt = b64(crypto.getRandomValues(new Uint8Array(16)));
+    hashPw(a, salt).then(function(h){
+      cfg.salt = salt; cfg.hash = h; if(cfg.timeout==null) cfg.timeout = 60000; saveCfg();
+      renderLockSettings(); toastMsg("Защита паролем включена");
+    });
+  });
+  $("lockOffBtn").addEventListener("click", function(){
+    var pw = window.prompt("Введите текущий пароль, чтобы отключить защиту:"); if(pw==null) return;
+    hashPw(pw, cfg.salt).then(function(h){
+      if(h!==cfg.hash){ toastMsg("Неверный пароль"); return; }
+      cfg = {}; saveCfg(); renderLockSettings(); toastMsg("Защита отключена");
+    });
+  });
+  $("lockBioChk").addEventListener("change", function(){
+    var chk = this;
+    if(chk.checked){
+      bioRegister().then(function(){ toastMsg("Биометрия включена"); }).catch(function(){ chk.checked = false; toastMsg("Не удалось включить биометрию"); });
+    } else { delete cfg.cred; saveCfg(); toastMsg("Биометрия отключена"); }
+  });
+  $("lockTimeout").addEventListener("change", function(){ cfg.timeout = parseInt(this.value,10); saveCfg(); });
+  $("lockNowBtn").addEventListener("click", lock);
+
+  // --- экран блокировки
+  $("lockGo").addEventListener("click", tryPw);
+  $("lockPw").addEventListener("keydown", function(e){ if(e.key==="Enter") tryPw(); });
+  $("lockBioBtn").addEventListener("click", bioLogin);
+  $("lockForgot").addEventListener("click", function(){
+    if(!confirm("Пароль восстановить нельзя. Можно сбросить защиту, но тогда ВСЕ данные в этом браузере будут удалены (их можно вернуть из резервной копии или через синхронизацию GitHub). Продолжить?")) return;
+    if(!confirm("Точно удалить данные и снять защиту?")) return;
+    try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+    cfg = {}; saveCfg(); location.reload();
+  });
+
+  // --- когда блокировать
+  document.addEventListener("visibilitychange", function(){
+    if(!enabled()) return;
+    if(document.visibilityState==="hidden"){ hiddenAt = Date.now(); return; }
+    var t = cfg.timeout==null ? 60000 : cfg.timeout;
+    if(t<0) return;
+    if(hiddenAt && Date.now()-hiddenAt >= t) lock();
+  });
+  window.addEventListener("pageshow", function(e){ if(e.persisted && enabled() && cfg.timeout!==-1) lock(); });
+
+  // экспорт для renderSettings (обновление состояния при открытии окна)
+  window.__renderLockSettings = renderLockSettings;
+  renderLockSettings();
+  if(enabled()) lock();
 })();
 
 // ---------- кнопка «Наверх» ----------
