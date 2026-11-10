@@ -343,6 +343,7 @@
   .lock-title{font-size:calc(20px * var(--fs));font-weight:700;margin:6px 0 16px;color:var(--ink);}
   .lock-err{min-height:20px;color:var(--danger);font-size:calc(13px * var(--fs));margin:6px 0;}
   body.locked{overflow:hidden;}
+  .pw-mask{-webkit-text-security:disc;text-security:disc;}
   .card-sub{font-size:calc(12px * var(--fs));color:var(--muted);margin-top:2px;font-weight:600;}
   .set-card{background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);padding:0 12px 2px;margin:8px 0;}
   .set-card .set-sec{margin:0;padding:12px 0;}
@@ -844,7 +845,7 @@
     <div class="lock-box">
       <div class="lock-ico">🔒</div>
       <div class="lock-title">Учёт квартиры</div>
-      <input class="set-inp" id="lockPw" type="password" placeholder="Пароль или PIN" autocomplete="current-password" autocapitalize="off">
+      <input class="set-inp pw-mask" id="lockPw" type="text" inputmode="text" placeholder="Пароль или PIN" name="app-lock-code" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-form-type="other">
       <div class="lock-err" id="lockErr"></div>
       <button class="btn-primary" id="lockGo" style="width:100%">Войти</button>
       <button class="btn-secondary" id="lockBioBtn" style="width:100%;text-align:center;margin-top:8px;display:none">👆 Войти по биометрии</button>
@@ -888,10 +889,12 @@
         <button class="btn-secondary" id="lockEnableBtn" style="width:100%;text-align:center">🔒 Включить защиту паролем</button>
       </div>
       <div id="lockSetup" style="display:none">
-        <div class="hint">Новый пароль или PIN (минимум 4 символа)</div>
-        <input class="set-inp" id="lockNew1" type="password" autocomplete="new-password" autocapitalize="off">
+        <div class="hint">Что использовать</div>
+        <select class="set-inp" id="lockKind"><option value="pin">Цифровой PIN (цифровая клавиатура)</option><option value="pw">Пароль (буквы и цифры)</option></select>
+        <div class="hint">Новый код (минимум 4 символа)</div>
+        <input class="set-inp pw-mask" id="lockNew1" type="text" name="app-lock-new1" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-form-type="other">
         <div class="hint">Повторите</div>
-        <input class="set-inp" id="lockNew2" type="password" autocomplete="new-password" autocapitalize="off">
+        <input class="set-inp pw-mask" id="lockNew2" type="text" name="app-lock-new2" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-form-type="other">
         <div class="hint" id="lockSetupErr" style="color:var(--danger)"></div>
         <div style="display:flex;gap:8px;margin-top:6px"><button class="btn-secondary" id="lockSetupCancel" style="flex:1;text-align:center">Отмена</button><button class="btn-primary" id="lockSetupSave" style="flex:1">Сохранить</button></div>
       </div>
@@ -2606,7 +2609,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.30";
+var APP_VERSION = "1.31";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
@@ -3645,6 +3648,8 @@ document.getElementById("fitSel").addEventListener("change", function(){ prefs.f
     if(!enabled()) return;
     $("lockScreen").style.display = "flex"; document.body.classList.add("locked");
     $("lockPw").value = ""; $("lockErr").textContent = "";
+    $("lockPw").setAttribute("inputmode", cfg.kind==="pin" ? "numeric" : "text");
+    $("lockPw").placeholder = cfg.kind==="pin" ? "PIN" : "Пароль";
     $("lockBioBtn").style.display = cfg.cred ? "block" : "none";
     var sheet = document.getElementById("settingsSheetBg"); if(sheet) sheet.classList.remove("show");
     if(cfg.cred) setTimeout(bioLogin, 300); else setTimeout(function(){ try{ $("lockPw").focus(); }catch(e){} }, 150);
@@ -3694,17 +3699,24 @@ document.getElementById("fitSel").addEventListener("change", function(){ prefs.f
     $("lockBioNote").textContent = note; $("lockBioChk").disabled = !!note;
     $("lockEnableBtn").disabled = !hasCrypto;
   }
-  function showSetup(){ $("lockSetup").style.display = "block"; $("lockOff").style.display = "none"; $("lockNew1").value = ""; $("lockNew2").value = ""; $("lockSetupErr").textContent = ""; $("lockNew1").focus(); }
+  function applyKind(kind){
+    var m = kind==="pin" ? "numeric" : "text";
+    ["lockNew1","lockNew2"].forEach(function(id){ $(id).setAttribute("inputmode", m); });
+  }
+  $("lockKind").addEventListener("change", function(){ applyKind(this.value); });
+  function showSetup(){ $("lockKind").value = cfg.kind || "pin"; applyKind($("lockKind").value); $("lockSetup").style.display = "block"; $("lockOff").style.display = "none"; $("lockNew1").value = ""; $("lockNew2").value = ""; $("lockSetupErr").textContent = ""; $("lockNew1").focus(); }
   $("lockEnableBtn").addEventListener("click", showSetup);
   $("lockChangeBtn").addEventListener("click", function(){ $("lockOn").style.display = "none"; showSetup(); });
   $("lockSetupCancel").addEventListener("click", renderLockSettings);
   $("lockSetupSave").addEventListener("click", function(){
     var a = $("lockNew1").value, b = $("lockNew2").value;
+    var kind = $("lockKind").value;
     if(a.length<4){ $("lockSetupErr").textContent = "Минимум 4 символа"; return; }
+    if(kind==="pin" && !/^\d+$/.test(a)){ $("lockSetupErr").textContent = "PIN — только цифры"; return; }
     if(a!==b){ $("lockSetupErr").textContent = "Пароли не совпадают"; return; }
     var salt = b64(crypto.getRandomValues(new Uint8Array(16)));
     hashPw(a, salt).then(function(h){
-      cfg.salt = salt; cfg.hash = h; if(cfg.timeout==null) cfg.timeout = 60000; saveCfg();
+      cfg.salt = salt; cfg.hash = h; cfg.kind = kind; if(cfg.timeout==null) cfg.timeout = 60000; saveCfg();
       renderLockSettings(); toastMsg("Защита паролем включена");
     });
   });
