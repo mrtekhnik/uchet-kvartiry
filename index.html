@@ -845,7 +845,7 @@
     <div class="lock-box">
       <div class="lock-ico">🔒</div>
       <div class="lock-title">Учёт квартиры</div>
-      <input class="set-inp pw-mask" id="lockPw" type="text" inputmode="text" placeholder="Пароль или PIN" name="app-lock-code" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-form-type="other">
+      <input class="set-inp pw-mask" id="lockPw" type="text" readonly inputmode="text" placeholder="Пароль или PIN" name="app-lock-code" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-form-type="other">
       <div class="lock-err" id="lockErr"></div>
       <button class="btn-primary" id="lockGo" style="width:100%">Войти</button>
       <button class="btn-secondary" id="lockBioBtn" style="width:100%;text-align:center;margin-top:8px;display:none">👆 Войти по биометрии</button>
@@ -909,9 +909,9 @@
       <div class="set-sec">Синхронизация через GitHub</div>
       <div class="hint" style="margin-bottom:8px">Телефон и компьютер обмениваются данными через ваш <b>приватный</b> репозиторий по кнопке ⟳. Подключение общее для всех приложений на mrtekhnik.github.io: если оно уже настроено в другом приложении, здесь ничего вводить не нужно.</div>
       <div class="hint">Репозиторий (имя/репозиторий)</div>
-      <input class="set-inp" id="syRepo" placeholder="mrtekhnik/sync" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <input class="set-inp" id="syRepo" name="gh-sync-repo" placeholder="mrtekhnik/sync" data-lpignore="true" data-form-type="other" autocomplete="off" autocapitalize="off" spellcheck="false">
       <div class="hint">Токен доступа</div>
-      <input class="set-inp" id="syTok" type="password" placeholder="github_pat_…" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <input class="set-inp pw-mask" id="syTok" type="text" name="gh-sync-token" placeholder="github_pat_…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-form-type="other">
       <div class="hint">Жёлтая точка на ⟳, если есть несинхронизированные изменения — через:</div>
       <select class="set-inp" id="syDelay"><option value="0">Сразу</option><option value="3600000">Через 1 ч</option><option value="10800000">Через 3 ч</option><option value="86400000">Через сутки</option></select>
       <div class="row2"><button class="btn-primary" id="sySave" style="padding:10px">Сохранить и проверить</button><button class="btn-secondary" id="syOff" style="text-align:center">Отключить</button></div>
@@ -2609,7 +2609,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.31";
+var APP_VERSION = "1.32";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
@@ -3647,12 +3647,12 @@ document.getElementById("fitSel").addEventListener("change", function(){ prefs.f
   function lock(){
     if(!enabled()) return;
     $("lockScreen").style.display = "flex"; document.body.classList.add("locked");
-    $("lockPw").value = ""; $("lockErr").textContent = "";
+    $("lockPw").value = ""; $("lockErr").textContent = ""; $("lockPw").setAttribute("readonly","");
     $("lockPw").setAttribute("inputmode", cfg.kind==="pin" ? "numeric" : "text");
     $("lockPw").placeholder = cfg.kind==="pin" ? "PIN" : "Пароль";
     $("lockBioBtn").style.display = cfg.cred ? "block" : "none";
     var sheet = document.getElementById("settingsSheetBg"); if(sheet) sheet.classList.remove("show");
-    if(cfg.cred) setTimeout(bioLogin, 300); else setTimeout(function(){ try{ $("lockPw").focus(); }catch(e){} }, 150);
+    if(cfg.cred) setTimeout(bioLogin, 300); else setTimeout(function(){ try{ $("lockPw").removeAttribute("readonly"); $("lockPw").focus(); }catch(e){} }, 150);
   }
   function unlock(){
     $("lockScreen").style.display = "none"; document.body.classList.remove("locked"); document.documentElement.classList.remove("pre-lock");
@@ -3737,6 +3737,7 @@ document.getElementById("fitSel").addEventListener("change", function(){ prefs.f
   $("lockNowBtn").addEventListener("click", lock);
 
   // --- экран блокировки
+  $("lockPw").addEventListener("focus", function(){ this.removeAttribute("readonly"); });
   $("lockGo").addEventListener("click", tryPw);
   $("lockPw").addEventListener("keydown", function(e){ if(e.key==="Enter") tryPw(); });
   $("lockBioBtn").addEventListener("click", bioLogin);
