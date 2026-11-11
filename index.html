@@ -848,6 +848,7 @@
       <input class="set-inp pw-mask" id="lockPw" type="text" enterkeyhint="go" readonly inputmode="text" placeholder="Пароль или PIN" name="app-lock-code" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-form-type="other">
       <div class="lock-err" id="lockErr"></div>
       <button class="btn-primary" id="lockGo" style="width:100%">Войти</button>
+      <button class="btn-danger-text" id="lockKb" style="margin-top:10px;background:none;border:0;color:var(--muted);font-weight:600">Цифровая клавиатура</button>
       <button class="btn-secondary" id="lockBioBtn" style="width:100%;text-align:center;margin-top:8px;display:none">👆 Войти по биометрии</button>
       <button class="btn-danger-text" id="lockForgot" style="margin-top:14px;background:none;border:0;text-decoration:underline">Забыли пароль?</button>
     </div>
@@ -2609,7 +2610,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.33";
+var APP_VERSION = "1.34";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
@@ -3650,6 +3651,7 @@ document.getElementById("fitSel").addEventListener("change", function(){ prefs.f
     $("lockPw").value = ""; $("lockErr").textContent = ""; $("lockPw").setAttribute("readonly","");
     $("lockPw").setAttribute("inputmode", cfg.kind==="pin" ? "numeric" : "text");
     $("lockPw").placeholder = cfg.kind==="pin" ? "PIN" : "Пароль";
+    $("lockKb").textContent = cfg.kind==="pin" ? "Обычная клавиатура" : "Цифровая клавиатура";
     $("lockBioBtn").style.display = cfg.cred ? "block" : "none";
     var sheet = document.getElementById("settingsSheetBg"); if(sheet) sheet.classList.remove("show");
     if(cfg.cred) setTimeout(bioLogin, 300); else setTimeout(function(){ try{ $("lockPw").removeAttribute("readonly"); $("lockPw").focus(); }catch(e){} }, 150);
@@ -3737,6 +3739,12 @@ document.getElementById("fitSel").addEventListener("change", function(){ prefs.f
   $("lockNowBtn").addEventListener("click", lock);
 
   // --- экран блокировки
+  $("lockKb").addEventListener("click", function(){
+    var num = $("lockPw").getAttribute("inputmode")!=="numeric";
+    $("lockPw").setAttribute("inputmode", num ? "numeric" : "text");
+    this.textContent = num ? "Обычная клавиатура" : "Цифровая клавиатура";
+    $("lockPw").removeAttribute("readonly"); $("lockPw").blur(); setTimeout(function(){ $("lockPw").focus(); }, 60);
+  });
   $("lockPw").addEventListener("focus", function(){ this.removeAttribute("readonly"); });
   $("lockNew1").addEventListener("keydown", function(e){ if(e.key==="Enter") $("lockNew2").focus(); });
   $("lockNew2").addEventListener("keydown", function(e){ if(e.key==="Enter") $("lockSetupSave").click(); });
