@@ -344,6 +344,8 @@
   .lock-err{min-height:20px;color:var(--danger);font-size:calc(13px * var(--fs));margin:6px 0;}
   body.locked{overflow:hidden;}
   .pw-mask{-webkit-text-security:disc;text-security:disc;}
+  .lock-box #lockPw{height:60px;font-size:calc(22px * var(--fs));text-align:center;letter-spacing:2px;}
+  .lock-box #lockGo{height:60px;font-size:calc(18px * var(--fs));}
   .card-sub{font-size:calc(12px * var(--fs));color:var(--muted);margin-top:2px;font-weight:600;}
   .set-card{background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);padding:0 12px 2px;margin:8px 0;}
   .set-card .set-sec{margin:0;padding:12px 0;}
@@ -2610,7 +2612,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.35";
+var APP_VERSION = "1.36";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
