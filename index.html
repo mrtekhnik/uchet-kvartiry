@@ -2610,7 +2610,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.34";
+var APP_VERSION = "1.35";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
@@ -3692,7 +3692,7 @@ document.getElementById("fitSel").addEventListener("change", function(){ prefs.f
     var on = enabled();
     $("lockOff").style.display = on ? "none" : "block";
     $("lockOn").style.display = on ? "block" : "none";
-    if(!on) $("lockSetup").style.display = "none";
+    $("lockSetup").style.display = "none"; $("lockSetupErr").textContent = "";
     $("lockBioChk").checked = !!cfg.cred;
     $("lockTimeout").value = String(cfg.timeout==null ? 60000 : cfg.timeout);
     var note = "";
@@ -3707,6 +3707,7 @@ document.getElementById("fitSel").addEventListener("change", function(){ prefs.f
   }
   $("lockKind").addEventListener("change", function(){ applyKind(this.value); });
   function showSetup(){ $("lockKind").value = cfg.kind || "pin"; applyKind($("lockKind").value); $("lockSetup").style.display = "block"; $("lockOff").style.display = "none"; $("lockNew1").value = ""; $("lockNew2").value = ""; $("lockSetupErr").textContent = ""; $("lockNew1").focus(); }
+  ["lockNew1","lockNew2"].forEach(function(id){ $(id).addEventListener("input", function(){ $("lockSetupErr").textContent = ""; }); });
   $("lockEnableBtn").addEventListener("click", showSetup);
   $("lockChangeBtn").addEventListener("click", function(){ $("lockOn").style.display = "none"; showSetup(); });
   $("lockSetupCancel").addEventListener("click", renderLockSettings);
