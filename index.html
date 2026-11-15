@@ -178,6 +178,9 @@
   .yearbars .yb{flex:1;background:var(--bar-bg);border-radius:3px 3px 0 0;position:relative;min-height:2px;}
   .yearbars .yb-slot{cursor:pointer;-webkit-tap-highlight-color:transparent;}
   .yearbars .yb-slot.sel .yb:not(.series-b){background:var(--accent);}
+  .trend-presets{display:flex;gap:6px;padding:0 6px 10px;}
+  .trend-presets button{flex:1;border:1.5px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:5px 4px;font-size:calc(12.5px * var(--fs));font-weight:700;font-family:inherit;-webkit-tap-highlight-color:transparent;}
+  .trend-presets button.active{border-color:var(--primary);background:var(--primary);color:#fff;}
   .trend-res{padding:2px 6px 4px;display:flex;flex-wrap:wrap;gap:4px;justify-content:space-between;}
   #trendChartBox.tall .yaxis,#trendChartBox.tall .yearbars{height:200px;}
   .trend-res .chip{border:2px solid var(--c);background:var(--c);color:#fff;border-radius:999px;padding:3px 9px;font-size:calc(12px * var(--fs));font-weight:700;line-height:1.2;-webkit-tap-highlight-color:transparent;font-family:inherit;}
@@ -192,7 +195,7 @@
   #trendChartBox.has-sel .yb-slot:not(.sel) .yb{opacity:.35;}
   .yearlabels span.sel{color:#fff;background:var(--primary);border-radius:6px;}
   .yearbars .yb.tc{opacity:.6;}
-  .yearbars .yb.tc.cur,.yearbars .yb.tc.on{opacity:1;}
+  .yearbars .yb.tc.cur,.yearbars .yb-slot.sel .yb.tc{opacity:1;}
   .yearbars .yb-slot.sel .yb.tc{outline:2px solid var(--ink);outline-offset:1px;}
   .yearbars .yb.stack{background:none !important;display:flex;flex-direction:column-reverse;border-radius:3px 3px 0 0;overflow:visible;}
   .yearbars .yb.stack i{display:block;flex-basis:0;min-height:1px;border-top:1px solid var(--surface);}
@@ -577,6 +580,9 @@
           <button class="seg-btn active" data-view="metric">Показатель</button>
           <button class="seg-btn" data-view="stack">По ресурсам</button>
         </div></div>
+        <div class="trend-presets" id="trendPresets">
+          <button type="button" data-p="3">3 мес</button><button type="button" data-p="6">6 мес</button><button type="button" data-p="12">12 мес</button><button type="button" data-p="all">Всё</button>
+        </div>
         <div style="padding:0 6px 10px" id="trendMetricBox">
           <div class="inline-row" style="align-items:flex-end">
             <div class="field" style="margin-bottom:0;flex:1 1 140px;min-width:0">
@@ -1524,10 +1530,20 @@ var trendMode1 = "year";
 document.getElementById("segTrend").addEventListener("click", function(e){
   var btn = e.target.closest(".seg-btn"); if(!btn) return;
   trendMode1 = btn.getAttribute("data-mode");
+  if(prefs.trendPreset){ prefs.trendPreset = ""; savePrefs(); }
   this.querySelectorAll(".seg-btn").forEach(function(b){b.classList.toggle("active", b===btn);});
   renderTrendChart();
 });
+function presetKeys(pr){
+  var all = monthKeys(), end = all.length ? all[all.length-1] : todayMonthKey();
+  if(todayMonthKey() > end && !all.length) end = todayMonthKey();
+  if(pr==="all") return all.length ? monthRange(all[0], end) : [end];
+  var n = parseInt(pr,10) || 12, start = end;
+  for(var i=1;i<n;i++) start = prevMonthKey(start);
+  return monthRange(start, end);
+}
 function keysForTrendPrimary(){
+  if(prefs.trendPreset) return presetKeys(prefs.trendPreset);
   if(trendMode1==="range"){
     return monthRange(document.getElementById("mainRangeStart").value, document.getElementById("mainRangeEnd").value);
   }
@@ -1658,7 +1674,7 @@ function renderTrendStack(keys1){
     var bar = h ? '<div class="yb stack" style="height:'+h+'%">'+parts+'<span class="ybval">'+Math.round(t).toLocaleString("ru-RU")+'</span></div>' : "";
     return '<div class="yb-slot'+(k===trendSelKey?' sel':'')+'" data-i="'+i+'">'+bar+'</div>';
   }).join("");
-  document.getElementById("yearLabelsRow").innerHTML = keys1.map(function(k){ return "<span>"+periodLabel(k, trendMode1==="year")+"</span>"; }).join("");
+  document.getElementById("yearLabelsRow").innerHTML = keys1.map(function(k){ return "<span>"+periodLabel(k, trendMode1==="year" && !prefs.trendPreset)+"</span>"; }).join("");
   var f = function(v){ return Math.round(v).toLocaleString("ru-RU"); };
   document.getElementById("yAxis").innerHTML = '<span>'+f(maxY)+'</span><span>'+f(maxY/2)+'</span><span>0</span>';
 
@@ -1676,13 +1692,23 @@ function renderTrendStack(keys1){
   document.getElementById("trendChartBox").classList.toggle("has-sel", !!one);
   document.querySelectorAll("#yearLabelsRow span").forEach(function(sp, i){ sp.classList.toggle("sel", keys1[i]===one); });
 }
+document.getElementById("trendPresets").addEventListener("click", function(e){
+  var b = e.target.closest("button"); if(!b) return;
+  var pr = b.getAttribute("data-p");
+  prefs.trendPreset = (prefs.trendPreset===pr) ? "" : pr; savePrefs();
+  trendSelKey = null; renderTrendChart();
+});
 function applyTrendView(){
   var st = trendIsStack();
+  var pr = prefs.trendPreset || "";
+  document.querySelectorAll("#trendPresets button").forEach(function(b){ b.classList.toggle("active", b.getAttribute("data-p")===pr); });
+  document.querySelectorAll("#segTrend .seg-btn").forEach(function(b){ b.classList.toggle("active", !pr && b.getAttribute("data-mode")===trendMode1); });
   document.querySelectorAll("#segTrendView .seg-btn").forEach(function(b){ b.classList.toggle("active", (b.getAttribute("data-view")==="stack")===st); });
   document.getElementById("trendMetricBox").style.display = st ? "none" : "";
   document.getElementById("trendRes").style.display = st ? "" : "none";
   document.getElementById("trendSum").classList.toggle("hide", !st);
   document.getElementById("trendChartBox").classList.toggle("tall", st);
+  if(!st) document.getElementById("trendChartBox").classList.remove("has-sel");
 }
 document.getElementById("segTrendView").addEventListener("click", function(e){
   var b = e.target.closest(".seg-btn"); if(!b) return;
@@ -1714,7 +1740,7 @@ function renderTrendChart(){
   applyTrendView();
   if(trendIsStack()){ renderTrendStack(keys1); return; }
   var keys2raw = periodSelectionToKeys(2);
-  var isYear1 = trendMode1==="year";
+  var isYear1 = trendMode1==="year" && !prefs.trendPreset;
   var isYear2 = keys2raw && document.getElementById("trendPeriod2").value.indexOf("year:")===0;
 
   trendInfoText(keys1, metric);
@@ -2737,7 +2763,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.44";
+var APP_VERSION = "1.45";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
