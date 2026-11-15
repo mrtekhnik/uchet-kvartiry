@@ -178,8 +178,9 @@
   .yearbars .yb{flex:1;background:var(--bar-bg);border-radius:3px 3px 0 0;position:relative;min-height:2px;}
   .yearbars .yb-slot{cursor:pointer;-webkit-tap-highlight-color:transparent;}
   .yearbars .yb-slot.sel .yb:not(.series-b){background:var(--accent);}
-  .trend-res{padding:0 6px 8px;display:flex;flex-wrap:wrap;gap:6px;}
-  .trend-res .chip{border:2px solid var(--c);background:var(--c);color:#fff;border-radius:999px;padding:5px 12px;font-size:calc(13px * var(--fs));font-weight:700;line-height:1.2;-webkit-tap-highlight-color:transparent;font-family:inherit;}
+  .trend-res{padding:2px 6px 4px;display:flex;flex-wrap:wrap;gap:4px;justify-content:space-between;}
+  #trendChartBox.tall .yaxis,#trendChartBox.tall .yearbars{height:200px;}
+  .trend-res .chip{border:2px solid var(--c);background:var(--c);color:#fff;border-radius:999px;padding:3px 9px;font-size:calc(12px * var(--fs));font-weight:700;line-height:1.2;-webkit-tap-highlight-color:transparent;font-family:inherit;}
   .trend-res .chip.off{background:transparent;border-color:var(--line);color:var(--muted);}
   .trend-info button{background:none;border:0;color:var(--primary);font-weight:700;font-size:inherit;padding:0 0 0 8px;font-family:inherit;}
   .yearbars .yb.tc{opacity:.6;}
@@ -523,6 +524,53 @@
         </div>
       </div>
 
+      <div data-card="trend" class="card" style="padding-left:8px;padding-right:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:0 6px;margin-bottom:8px">
+          <div><h2 style="margin:0;padding:0">Динамика по месяцам</h2><div class="card-sub" id="trendSub"></div></div>
+          <div class="seg" id="segTrend">
+            <button class="seg-btn active" data-mode="year">Год</button>
+            <button class="seg-btn" data-mode="range">Период</button>
+          </div>
+        </div>
+        <div style="padding:0 6px 8px"><div class="seg" id="segTrendView" style="display:inline-flex">
+          <button class="seg-btn active" data-view="metric">Показатель</button>
+          <button class="seg-btn" data-view="stack">По ресурсам</button>
+        </div></div>
+        <div style="padding:0 6px 10px" id="trendMetricBox">
+          <div class="inline-row" style="align-items:flex-end">
+            <div class="field" style="margin-bottom:0;flex:1 1 140px;min-width:0">
+              <label>Показатель</label>
+              <select id="trendMetric"></select>
+            </div>
+            <button class="btn-secondary" id="trendCompareToggle" data-toggle="trendCompareDetails" style="flex:none">Сравнить с… ▸</button>
+          </div>
+          <div class="toggle-panel" id="trendCompareDetails">
+            <div class="field" style="margin-bottom:0;margin-top:10px">
+              <select id="trendPeriod2"></select>
+            </div>
+            <div class="field trend-customn-row" id="trendCustomN2Wrap" style="display:none;margin-top:6px;margin-bottom:0">
+              <label>Сколько месяцев назад (от текущего)</label>
+              <input type="number" inputmode="numeric" min="1" max="240" id="trendCustomN2" placeholder="Например, 9">
+            </div>
+            <div class="row2 trend-custom-row" id="trendCustom2Wrap" style="display:none;margin-top:6px">
+              <div class="field" style="margin-bottom:0"><label>С</label><input type="month" id="trendCustomStart2"></div>
+              <div class="field" style="margin-bottom:0"><label>По</label><input type="month" id="trendCustomEnd2"></div>
+            </div>
+          </div>
+        </div>
+        <div class="legend" id="trendLegend" style="padding:0 6px 6px;display:none"></div>
+        <div class="trend-info" id="trendInfo"></div>
+        <div class="yearchart" id="trendChartBox">
+          <div class="yaxis" id="yAxis"></div>
+          <div class="ybars-wrap">
+            <div class="yearbars" id="yearBars"></div>
+            <div class="yearlabels" id="yearLabelsRow"></div>
+          </div>
+        </div>
+        <div class="trend-info" id="trendSum" style="display:none;padding-top:8px"></div>
+        <div class="trend-res" id="trendRes" style="display:none"></div>
+      </div>
+
       <div data-card="kpi" class="card">
         <div class="kpi-head">
           <h2 style="margin:0">Основные показатели</h2>
@@ -565,52 +613,6 @@
         <div class="donut-wrap">
           <div class="donut" id="donutMonth"></div>
           <div class="legend" id="legendMonth"></div>
-        </div>
-      </div>
-
-      <div data-card="trend" class="card" style="padding-left:8px;padding-right:8px">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:0 6px;margin-bottom:8px">
-          <div><h2 style="margin:0;padding:0">Динамика по месяцам</h2><div class="card-sub" id="trendSub"></div></div>
-          <div class="seg" id="segTrend">
-            <button class="seg-btn active" data-mode="year">Год</button>
-            <button class="seg-btn" data-mode="range">Период</button>
-          </div>
-        </div>
-        <div style="padding:0 6px 8px"><div class="seg" id="segTrendView" style="display:inline-flex">
-          <button class="seg-btn active" data-view="metric">Показатель</button>
-          <button class="seg-btn" data-view="stack">По ресурсам</button>
-        </div></div>
-        <div style="padding:0 6px 10px" id="trendMetricBox">
-          <div class="inline-row" style="align-items:flex-end">
-            <div class="field" style="margin-bottom:0;flex:1 1 140px;min-width:0">
-              <label>Показатель</label>
-              <select id="trendMetric"></select>
-            </div>
-            <button class="btn-secondary" id="trendCompareToggle" data-toggle="trendCompareDetails" style="flex:none">Сравнить с… ▸</button>
-          </div>
-          <div class="toggle-panel" id="trendCompareDetails">
-            <div class="field" style="margin-bottom:0;margin-top:10px">
-              <select id="trendPeriod2"></select>
-            </div>
-            <div class="field trend-customn-row" id="trendCustomN2Wrap" style="display:none;margin-top:6px;margin-bottom:0">
-              <label>Сколько месяцев назад (от текущего)</label>
-              <input type="number" inputmode="numeric" min="1" max="240" id="trendCustomN2" placeholder="Например, 9">
-            </div>
-            <div class="row2 trend-custom-row" id="trendCustom2Wrap" style="display:none;margin-top:6px">
-              <div class="field" style="margin-bottom:0"><label>С</label><input type="month" id="trendCustomStart2"></div>
-              <div class="field" style="margin-bottom:0"><label>По</label><input type="month" id="trendCustomEnd2"></div>
-            </div>
-          </div>
-        </div>
-        <div class="trend-res" id="trendRes" style="display:none"></div>
-        <div class="legend" id="trendLegend" style="padding:0 6px 6px;display:none"></div>
-        <div class="trend-info" id="trendInfo"></div>
-        <div class="yearchart">
-          <div class="yaxis" id="yAxis"></div>
-          <div class="ybars-wrap">
-            <div class="yearbars" id="yearBars"></div>
-            <div class="yearlabels" id="yearLabelsRow"></div>
-          </div>
         </div>
       </div>
 
@@ -1605,7 +1607,7 @@ document.getElementById("yearBars").addEventListener("click", function(e){
   var key = keys1[parseInt(slot.getAttribute("data-i"),10)];
   if(!key) return;
   trendSelKey = (trendSelKey===key) ? null : key;      // повторный тап снимает выбор
-  if(trendSelKey && prefs.trendPick!==false && !trendIsStack()){
+  if(trendSelKey && prefs.trendPick!==false){
     mainMonthEl.value = key;
     svcMode = "month"; donutMode = "month";
     ["segSvc","segDonut"].forEach(function(id){
@@ -1618,7 +1620,7 @@ document.getElementById("yearBars").addEventListener("click", function(e){
 // ---------- «Динамика»: режим «По ресурсам» (столбики с цветными частями, в гривнах) ----------
 var TREND_RES = [
   {key:"gas", name:"Газ", field:"gasPayment", color:"var(--gas)"},
-  {key:"delivery", name:"Доставка газа", field:"deliveryPayment", color:"var(--delivery)"},
+  {key:"delivery", name:"Доставка", field:"deliveryPayment", color:"var(--delivery)"},
   {key:"electro", name:"Свет", field:"elPayment", color:"var(--electro)"},
   {key:"water", name:"Вода", field:"waterPayment", color:"var(--water)"},
   {key:"rent", name:"Квартплата", field:"rent", color:"var(--rent)"}
@@ -1638,6 +1640,7 @@ function renderTrendStack(keys1){
   var totals = keys1.map(tot);
   var maxY = Math.max.apply(null, totals.concat([1]));
   document.getElementById("trendLegend").style.display = "none";
+  document.getElementById("trendInfo").textContent = "";
   document.getElementById("yearBars").innerHTML = keys1.map(function(k, i){
     var t = totals[i], h = t>0 ? Math.max(3, Math.round(t/maxY*100)) : 0;
     var parts = on.map(function(r){ var v = val(k,r); return v>0 ? '<i style="flex-grow:'+v+';background:'+r.color+'"></i>' : ""; }).join("");
@@ -1656,7 +1659,7 @@ function renderTrendStack(keys1){
   var one = (trendSelKey && keys1.indexOf(trendSelKey)>=0) ? trendSelKey : null;
   var sel = one ? [one] : keys1.filter(function(k){ return !!data.monthly[k]; });
   var sum = sel.reduce(function(s,k){ return s+tot(k); }, 0);
-  var info = document.getElementById("trendInfo");
+  var info = document.getElementById("trendSum");
   info.innerHTML = (one ? (MONTH_FULL[monthNum(one)-1]+" "+yearOf(one)) : ("Весь период · "+sel.length+" мес."))+" — <b>"+f(sum)+" грн</b>"+(one ? '<button type="button" id="trendResAll">× весь период</button>' : "");
 }
 function applyTrendView(){
@@ -1664,13 +1667,15 @@ function applyTrendView(){
   document.querySelectorAll("#segTrendView .seg-btn").forEach(function(b){ b.classList.toggle("active", (b.getAttribute("data-view")==="stack")===st); });
   document.getElementById("trendMetricBox").style.display = st ? "none" : "";
   document.getElementById("trendRes").style.display = st ? "" : "none";
+  document.getElementById("trendSum").style.display = st ? "" : "none";
+  document.getElementById("trendChartBox").classList.toggle("tall", st);
 }
 document.getElementById("segTrendView").addEventListener("click", function(e){
   var b = e.target.closest(".seg-btn"); if(!b) return;
   prefs.trendView = b.getAttribute("data-view"); savePrefs();
   trendSelKey = null; applyTrendView(); renderTrendChart();
 });
-document.getElementById("trendInfo").addEventListener("click", function(e){
+document.getElementById("trendSum").addEventListener("click", function(e){
   if(e.target.id==="trendResAll"){ trendSelKey = null; renderTrendChart(); }
 });
 document.getElementById("trendRes").addEventListener("click", function(e){
@@ -2718,7 +2723,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.40";
+var APP_VERSION = "1.41";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
