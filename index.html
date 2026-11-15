@@ -178,7 +178,9 @@
   .yearbars .yb{flex:1;background:var(--bar-bg);border-radius:3px 3px 0 0;position:relative;min-height:2px;}
   .yearbars .yb-slot{cursor:pointer;-webkit-tap-highlight-color:transparent;}
   .yearbars .yb-slot.sel .yb:not(.series-b){background:var(--accent);}
-  .trend-presets{display:flex;gap:6px;padding:0 6px 10px;}
+  #trendPresets.open{display:flex;margin-top:0;}
+  .trend-presets{margin-top:0;gap:6px;padding:0 6px 10px;}
+  #trendPresetsBtn.on{border:1.5px solid var(--primary);}
   .trend-presets button{flex:1;border:1.5px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:5px 4px;font-size:calc(12.5px * var(--fs));font-weight:700;font-family:inherit;-webkit-tap-highlight-color:transparent;}
   .trend-presets button.active{border-color:var(--primary);background:var(--primary);color:#fff;}
   .trend-res{padding:2px 6px 4px;display:flex;flex-wrap:wrap;gap:4px;justify-content:space-between;}
@@ -576,18 +578,17 @@
             <button class="seg-btn" data-mode="range">Период</button>
           </div>
         </div>
-        <div style="padding:0 6px 8px"><div class="seg" id="segTrendView" style="display:inline-flex">
+        <div style="padding:0 6px 8px;display:flex;align-items:center;justify-content:space-between;gap:8px"><div class="seg" id="segTrendView" style="display:inline-flex">
           <button class="seg-btn active" data-view="metric">Показатель</button>
           <button class="seg-btn" data-view="stack">По ресурсам</button>
-        </div></div>
-        <div class="trend-presets" id="trendPresets">
+        </div><button class="btn-secondary" id="trendPresetsBtn" data-toggle="trendPresets" style="flex:none;padding:8px 12px">Периоды ▸</button></div>
+        <div class="trend-presets toggle-panel" id="trendPresets">
           <button type="button" data-p="3">3 мес</button><button type="button" data-p="6">6 мес</button><button type="button" data-p="12">12 мес</button><button type="button" data-p="all">Всё</button>
         </div>
         <div style="padding:0 6px 10px" id="trendMetricBox">
           <div class="inline-row" style="align-items:flex-end">
             <div class="field" style="margin-bottom:0;flex:1 1 140px;min-width:0">
-              <label>Показатель</label>
-              <select id="trendMetric"></select>
+              <select id="trendMetric" aria-label="Показатель"></select>
             </div>
             <button class="btn-secondary" id="trendCompareToggle" data-toggle="trendCompareDetails" style="flex:none">Сравнить с… ▸</button>
           </div>
@@ -1688,7 +1689,7 @@ function renderTrendStack(keys1){
   var sum = sel.reduce(function(s,k){ return s+tot(k); }, 0);
   var info = document.getElementById("trendSum");
   var ttl = one ? (MONTH_FULL[monthNum(one)-1]+" "+yearOf(one)) : ("Весь период · "+sel.length+" мес.");
-  info.innerHTML = '<span>'+ttl+' — <b>'+f(sum)+' грн</b></span>'+(one ? '<button type="button" id="trendResAll">Показать весь период</button>' : '<span style="font-weight:500;font-size:calc(11.5px * var(--fs));flex-basis:100%">Тап по столбцу — выбрать месяц</span>');
+  info.innerHTML = '<span>'+ttl+' — <b>'+f(sum)+' грн</b></span>'+(one ? '<button type="button" id="trendResAll">Показать весь период</button>' : '""');
   document.getElementById("trendChartBox").classList.toggle("has-sel", !!one);
   document.querySelectorAll("#yearLabelsRow span").forEach(function(sp, i){ sp.classList.toggle("sel", keys1[i]===one); });
 }
@@ -1702,6 +1703,7 @@ function applyTrendView(){
   var st = trendIsStack();
   var pr = prefs.trendPreset || "";
   document.querySelectorAll("#trendPresets button").forEach(function(b){ b.classList.toggle("active", b.getAttribute("data-p")===pr); });
+  document.getElementById("trendPresetsBtn").classList.toggle("on", !!pr);
   document.querySelectorAll("#segTrend .seg-btn").forEach(function(b){ b.classList.toggle("active", !pr && b.getAttribute("data-mode")===trendMode1); });
   document.querySelectorAll("#segTrendView .seg-btn").forEach(function(b){ b.classList.toggle("active", (b.getAttribute("data-view")==="stack")===st); });
   document.getElementById("trendMetricBox").style.display = st ? "none" : "";
@@ -2763,7 +2765,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.47";
+var APP_VERSION = "1.48";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
