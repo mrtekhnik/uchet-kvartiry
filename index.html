@@ -178,18 +178,13 @@
   .yearbars .yb{flex:1;background:var(--bar-bg);border-radius:3px 3px 0 0;position:relative;min-height:2px;}
   .yearbars .yb-slot{cursor:pointer;-webkit-tap-highlight-color:transparent;}
   .yearbars .yb-slot.sel .yb:not(.series-b){background:var(--accent);}
-  .trend-res{padding:10px 6px 0;}
-  .trend-res .res-head{display:flex;justify-content:space-between;align-items:center;font-size:calc(13px * var(--fs));font-weight:700;margin-bottom:4px;}
-  .trend-res .res-head button{background:none;border:0;color:var(--primary);font-weight:700;font-size:calc(12.5px * var(--fs));}
-  .trend-res .res-row{display:flex;align-items:center;gap:10px;padding:9px 2px;border-top:1px solid var(--line);cursor:pointer;-webkit-tap-highlight-color:transparent;}
-  .trend-res .res-row .rd{width:12px;height:12px;border-radius:50%;flex:none;}
-  .trend-res .res-row .rn{flex:1;font-size:calc(14px * var(--fs));font-weight:600;}
-  .trend-res .res-row .rv{font-weight:700;font-size:calc(14px * var(--fs));}
-  .trend-res .res-row .rp{width:42px;text-align:right;color:var(--muted);font-size:calc(12.5px * var(--fs));}
-  .trend-res .res-row.off{opacity:.45;}
-  .trend-res .res-row.off .rd{background:transparent !important;border:2px solid var(--muted);}
-  .trend-res .res-tot{display:flex;justify-content:space-between;padding:9px 2px 2px;border-top:1px solid var(--line);font-weight:800;font-size:calc(14px * var(--fs));}
-  .trend-res .res-hint{font-size:calc(11.5px * var(--fs));color:var(--muted);margin-top:6px;}
+  .trend-res{padding:0 6px 8px;display:flex;flex-wrap:wrap;gap:6px;}
+  .trend-res .chip{border:2px solid var(--c);background:var(--c);color:#fff;border-radius:999px;padding:5px 12px;font-size:calc(13px * var(--fs));font-weight:700;line-height:1.2;-webkit-tap-highlight-color:transparent;font-family:inherit;}
+  .trend-res .chip.off{background:transparent;border-color:var(--line);color:var(--muted);}
+  .trend-info button{background:none;border:0;color:var(--primary);font-weight:700;font-size:inherit;padding:0 0 0 8px;font-family:inherit;}
+  .yearbars .yb.tc{opacity:.6;}
+  .yearbars .yb.tc.cur,.yearbars .yb.tc.on{opacity:1;}
+  .yearbars .yb-slot.sel .yb.tc{outline:2px solid var(--ink);outline-offset:1px;}
   .yearbars .yb.stack{background:none !important;display:flex;flex-direction:column-reverse;border-radius:3px 3px 0 0;overflow:visible;}
   .yearbars .yb.stack i{display:block;flex-basis:0;min-height:1px;border-top:1px solid var(--surface);}
   .yearbars .yb.stack i:last-child{border-radius:3px 3px 0 0;border-top:0;}
@@ -607,6 +602,7 @@
             </div>
           </div>
         </div>
+        <div class="trend-res" id="trendRes" style="display:none"></div>
         <div class="legend" id="trendLegend" style="padding:0 6px 6px;display:none"></div>
         <div class="trend-info" id="trendInfo"></div>
         <div class="yearchart">
@@ -616,7 +612,6 @@
             <div class="yearlabels" id="yearLabelsRow"></div>
           </div>
         </div>
-        <div class="trend-res" id="trendRes" style="display:none"></div>
       </div>
 
       <div data-card="extra" class="card">
@@ -1632,6 +1627,9 @@ function trendResOn(){
   var r = prefs.trendRes || {gas:1, electro:1, water:1};
   return TREND_RES.filter(function(x){ return !!r[x.key]; });
 }
+var METRIC_COLOR = {gasPayment:"var(--gas)", gasConsumption:"var(--gas)", gasReadingRaw:"var(--gas)", deliveryPayment:"var(--delivery)",
+  elPayment:"var(--electro)", elConsumption:"var(--electro)", elReadingRaw:"var(--electro)",
+  waterPayment:"var(--water)", waterConsumption:"var(--water)", waterReadingRaw:"var(--water)", rent:"var(--rent)"};
 function trendIsStack(){ return prefs.trendView==="stack"; }
 function renderTrendStack(keys1){
   var on = trendResOn();
@@ -1640,7 +1638,6 @@ function renderTrendStack(keys1){
   var totals = keys1.map(tot);
   var maxY = Math.max.apply(null, totals.concat([1]));
   document.getElementById("trendLegend").style.display = "none";
-  document.getElementById("trendInfo").textContent = "";
   document.getElementById("yearBars").innerHTML = keys1.map(function(k, i){
     var t = totals[i], h = t>0 ? Math.max(3, Math.round(t/maxY*100)) : 0;
     var parts = on.map(function(r){ var v = val(k,r); return v>0 ? '<i style="flex-grow:'+v+';background:'+r.color+'"></i>' : ""; }).join("");
@@ -1651,20 +1648,16 @@ function renderTrendStack(keys1){
   var f = function(v){ return Math.round(v).toLocaleString("ru-RU"); };
   document.getElementById("yAxis").innerHTML = '<span>'+f(maxY)+'</span><span>'+f(maxY/2)+'</span><span>0</span>';
 
-  // список-разбивка: выбранный месяц или весь период; строки включают/выключают ресурс
-  var sel = (trendSelKey && keys1.indexOf(trendSelKey)>=0) ? [trendSelKey] : keys1.filter(function(k){ return !!data.monthly[k]; });
-  var sums = TREND_RES.map(function(r){ return sel.reduce(function(s,k){ return s+val(k,r); }, 0); });
+  // кнопки-ресурсы над диаграммой + одна строка итога под ней
   var onKeys = {}; on.forEach(function(r){ onKeys[r.key] = true; });
-  var onSum = TREND_RES.reduce(function(s,r,i){ return s + (onKeys[r.key] ? sums[i] : 0); }, 0) || 1;
-  var head = (sel.length===1 && trendSelKey) ? (MONTH_FULL[monthNum(sel[0])-1]+" "+yearOf(sel[0])) : ("Весь период · "+sel.length+" мес.");
-  var html = '<div class="res-head"><span>'+head+'</span>'+((sel.length===1 && trendSelKey) ? '<button id="trendResAll">× весь период</button>' : '')+'</div>';
-  TREND_RES.forEach(function(r, i){
-    var isOn = !!onKeys[r.key];
-    html += '<div class="res-row'+(isOn?'':' off')+'" data-res="'+r.key+'"><span class="rd" style="background:'+r.color+'"></span><span class="rn">'+r.name+'</span><span class="rv">'+f(sums[i])+' грн</span><span class="rp">'+(isOn ? Math.round(sums[i]/onSum*100)+'%' : '—')+'</span></div>';
-  });
-  html += '<div class="res-tot"><span>Итого (включено)</span><span>'+f(TREND_RES.reduce(function(s,r,i){ return s+(onKeys[r.key]?sums[i]:0); },0))+' грн</span></div>';
-  html += '<div class="res-hint">Тап по столбцу — разбивка месяца, по строке — показать или скрыть ресурс.</div>';
-  document.getElementById("trendRes").innerHTML = html;
+  document.getElementById("trendRes").innerHTML = TREND_RES.map(function(r){
+    return '<button type="button" class="chip'+(onKeys[r.key]?'':' off')+'" data-res="'+r.key+'" style="--c:'+r.color+'" aria-pressed="'+(onKeys[r.key]?'true':'false')+'">'+r.name+'</button>';
+  }).join("");
+  var one = (trendSelKey && keys1.indexOf(trendSelKey)>=0) ? trendSelKey : null;
+  var sel = one ? [one] : keys1.filter(function(k){ return !!data.monthly[k]; });
+  var sum = sel.reduce(function(s,k){ return s+tot(k); }, 0);
+  var info = document.getElementById("trendInfo");
+  info.innerHTML = (one ? (MONTH_FULL[monthNum(one)-1]+" "+yearOf(one)) : ("Весь период · "+sel.length+" мес."))+" — <b>"+f(sum)+" грн</b>"+(one ? '<button type="button" id="trendResAll">× весь период</button>' : "");
 }
 function applyTrendView(){
   var st = trendIsStack();
@@ -1677,9 +1670,11 @@ document.getElementById("segTrendView").addEventListener("click", function(e){
   prefs.trendView = b.getAttribute("data-view"); savePrefs();
   trendSelKey = null; applyTrendView(); renderTrendChart();
 });
+document.getElementById("trendInfo").addEventListener("click", function(e){
+  if(e.target.id==="trendResAll"){ trendSelKey = null; renderTrendChart(); }
+});
 document.getElementById("trendRes").addEventListener("click", function(e){
-  if(e.target.id==="trendResAll"){ trendSelKey = null; renderTrendChart(); return; }
-  var row = e.target.closest(".res-row"); if(!row) return;
+  var row = e.target.closest(".chip"); if(!row) return;
   var r = prefs.trendRes || {gas:1, electro:1, water:1}, k = row.getAttribute("data-res");
   r[k] = r[k] ? 0 : 1; prefs.trendRes = r; savePrefs(); renderTrendChart();
 });
@@ -1763,7 +1758,8 @@ function renderTrendChart(){
         '</div>' : '';
       return '<div class="yb-slot'+(keys1[i]&&keys1[i]===trendSelKey?' sel':'')+'" data-i="'+i+'">'+label+bar1+bar2+'</div>';
     }
-    var bar1 = '<div class="yb'+(isCur?" cur":"")+'" style="height:'+h1+'%">'+
+    var mc = METRIC_COLOR[metric.key];
+    var bar1 = '<div class="yb'+(mc?" tc":"")+(isCur?" cur":"")+'" style="height:'+h1+'%'+(mc?';background:'+mc:'')+'">'+
       (v1!=null? '<span class="ybval">'+fmtVal(v1)+'</span>' : '')+'</div>';
     return '<div class="yb-slot'+(keys1[i]&&keys1[i]===trendSelKey?' sel':'')+'" data-i="'+i+'">'+bar1+'</div>';
   }).join("");
@@ -2722,7 +2718,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.39";
+var APP_VERSION = "1.40";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
