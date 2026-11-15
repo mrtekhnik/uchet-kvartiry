@@ -182,7 +182,15 @@
   #trendChartBox.tall .yaxis,#trendChartBox.tall .yearbars{height:200px;}
   .trend-res .chip{border:2px solid var(--c);background:var(--c);color:#fff;border-radius:999px;padding:3px 9px;font-size:calc(12px * var(--fs));font-weight:700;line-height:1.2;-webkit-tap-highlight-color:transparent;font-family:inherit;}
   .trend-res .chip.off{background:transparent;border-color:var(--line);color:var(--muted);}
-  .trend-info button{background:none;border:0;color:var(--primary);font-weight:700;font-size:inherit;padding:0 0 0 8px;font-family:inherit;}
+  .trend-info button{background:var(--surface);border:1.5px solid var(--primary);color:var(--primary);border-radius:999px;font-weight:700;font-size:calc(12px * var(--fs));padding:3px 10px;font-family:inherit;flex:none;}
+  #trendSum{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  #trendSum.hide{display:none;}
+  #trendChartBox.tall .yearbars{gap:5px;}
+  #trendChartBox.tall .yb-slot{flex:1 0 18px;width:18px;min-width:18px;}
+  #trendChartBox.tall .yearlabels{gap:5px;}
+  #trendChartBox.tall .yearlabels span{flex:1 0 18px;width:18px;min-width:18px;font-size:calc(9px * var(--fs));}
+  #trendChartBox.has-sel .yb-slot:not(.sel) .yb{opacity:.35;}
+  .yearlabels span.sel{color:#fff;background:var(--primary);border-radius:6px;}
   .yearbars .yb.tc{opacity:.6;}
   .yearbars .yb.tc.cur,.yearbars .yb.tc.on{opacity:1;}
   .yearbars .yb-slot.sel .yb.tc{outline:2px solid var(--ink);outline-offset:1px;}
@@ -600,7 +608,7 @@
             <div class="yearlabels" id="yearLabelsRow"></div>
           </div>
         </div>
-        <div class="trend-info" id="trendSum" style="display:none;padding-top:8px"></div>
+        <div class="trend-info hide" id="trendSum" style="padding-top:8px"></div>
         <div class="trend-res" id="trendRes" style="display:none"></div>
       </div>
 
@@ -1663,14 +1671,17 @@ function renderTrendStack(keys1){
   var sel = one ? [one] : keys1.filter(function(k){ return !!data.monthly[k]; });
   var sum = sel.reduce(function(s,k){ return s+tot(k); }, 0);
   var info = document.getElementById("trendSum");
-  info.innerHTML = (one ? (MONTH_FULL[monthNum(one)-1]+" "+yearOf(one)) : ("Весь период · "+sel.length+" мес."))+" — <b>"+f(sum)+" грн</b>"+(one ? '<button type="button" id="trendResAll">× весь период</button>' : "");
+  var ttl = one ? (MONTH_FULL[monthNum(one)-1]+" "+yearOf(one)) : ("Весь период · "+sel.length+" мес.");
+  info.innerHTML = '<span>'+ttl+' — <b>'+f(sum)+' грн</b></span>'+(one ? '<button type="button" id="trendResAll">Показать весь период</button>' : '<span style="font-weight:500;font-size:calc(11.5px * var(--fs));text-align:right">тап по столбцу — выбрать месяц</span>');
+  document.getElementById("trendChartBox").classList.toggle("has-sel", !!one);
+  document.querySelectorAll("#yearLabelsRow span").forEach(function(sp, i){ sp.classList.toggle("sel", keys1[i]===one); });
 }
 function applyTrendView(){
   var st = trendIsStack();
   document.querySelectorAll("#segTrendView .seg-btn").forEach(function(b){ b.classList.toggle("active", (b.getAttribute("data-view")==="stack")===st); });
   document.getElementById("trendMetricBox").style.display = st ? "none" : "";
   document.getElementById("trendRes").style.display = st ? "" : "none";
-  document.getElementById("trendSum").style.display = st ? "" : "none";
+  document.getElementById("trendSum").classList.toggle("hide", !st);
   document.getElementById("trendChartBox").classList.toggle("tall", st);
 }
 document.getElementById("segTrendView").addEventListener("click", function(e){
@@ -2726,7 +2737,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.43";
+var APP_VERSION = "1.44";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
