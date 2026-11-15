@@ -178,6 +178,22 @@
   .yearbars .yb{flex:1;background:var(--bar-bg);border-radius:3px 3px 0 0;position:relative;min-height:2px;}
   .yearbars .yb-slot{cursor:pointer;-webkit-tap-highlight-color:transparent;}
   .yearbars .yb-slot.sel .yb:not(.series-b){background:var(--accent);}
+  .trend-res{padding:10px 6px 0;}
+  .trend-res .res-head{display:flex;justify-content:space-between;align-items:center;font-size:calc(13px * var(--fs));font-weight:700;margin-bottom:4px;}
+  .trend-res .res-head button{background:none;border:0;color:var(--primary);font-weight:700;font-size:calc(12.5px * var(--fs));}
+  .trend-res .res-row{display:flex;align-items:center;gap:10px;padding:9px 2px;border-top:1px solid var(--line);cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .trend-res .res-row .rd{width:12px;height:12px;border-radius:50%;flex:none;}
+  .trend-res .res-row .rn{flex:1;font-size:calc(14px * var(--fs));font-weight:600;}
+  .trend-res .res-row .rv{font-weight:700;font-size:calc(14px * var(--fs));}
+  .trend-res .res-row .rp{width:42px;text-align:right;color:var(--muted);font-size:calc(12.5px * var(--fs));}
+  .trend-res .res-row.off{opacity:.45;}
+  .trend-res .res-row.off .rd{background:transparent !important;border:2px solid var(--muted);}
+  .trend-res .res-tot{display:flex;justify-content:space-between;padding:9px 2px 2px;border-top:1px solid var(--line);font-weight:800;font-size:calc(14px * var(--fs));}
+  .trend-res .res-hint{font-size:calc(11.5px * var(--fs));color:var(--muted);margin-top:6px;}
+  .yearbars .yb.stack{background:none !important;display:flex;flex-direction:column-reverse;border-radius:3px 3px 0 0;overflow:visible;}
+  .yearbars .yb.stack i{display:block;flex-basis:0;min-height:1px;border-top:1px solid var(--surface);}
+  .yearbars .yb.stack i:last-child{border-radius:3px 3px 0 0;border-top:0;}
+  .yearbars .yb-slot.sel .yb.stack{outline:2px solid var(--ink);outline-offset:1px;}
   .trend-info{font-size:calc(12.5px * var(--fs));color:var(--muted);font-weight:600;padding:0 6px 6px;min-height:0;}
   .trend-info:empty{display:none;}
   .yearbars .yb.cur{background:var(--primary);}
@@ -565,7 +581,11 @@
             <button class="seg-btn" data-mode="range">Период</button>
           </div>
         </div>
-        <div style="padding:0 6px 10px">
+        <div style="padding:0 6px 8px"><div class="seg" id="segTrendView" style="display:inline-flex">
+          <button class="seg-btn active" data-view="metric">Показатель</button>
+          <button class="seg-btn" data-view="stack">По ресурсам</button>
+        </div></div>
+        <div style="padding:0 6px 10px" id="trendMetricBox">
           <div class="inline-row" style="align-items:flex-end">
             <div class="field" style="margin-bottom:0;flex:1 1 140px;min-width:0">
               <label>Показатель</label>
@@ -596,6 +616,7 @@
             <div class="yearlabels" id="yearLabelsRow"></div>
           </div>
         </div>
+        <div class="trend-res" id="trendRes" style="display:none"></div>
       </div>
 
       <div data-card="extra" class="card">
@@ -1589,7 +1610,7 @@ document.getElementById("yearBars").addEventListener("click", function(e){
   var key = keys1[parseInt(slot.getAttribute("data-i"),10)];
   if(!key) return;
   trendSelKey = (trendSelKey===key) ? null : key;      // повторный тап снимает выбор
-  if(trendSelKey && prefs.trendPick!==false){
+  if(trendSelKey && prefs.trendPick!==false && !trendIsStack()){
     mainMonthEl.value = key;
     svcMode = "month"; donutMode = "month";
     ["segSvc","segDonut"].forEach(function(id){
@@ -1597,6 +1618,70 @@ document.getElementById("yearBars").addEventListener("click", function(e){
     });
     renderMain();
   } else renderTrendChart();
+});
+
+// ---------- «Динамика»: режим «По ресурсам» (столбики с цветными частями, в гривнах) ----------
+var TREND_RES = [
+  {key:"gas", name:"Газ", field:"gasPayment", color:"var(--gas)"},
+  {key:"delivery", name:"Доставка газа", field:"deliveryPayment", color:"var(--delivery)"},
+  {key:"electro", name:"Свет", field:"elPayment", color:"var(--electro)"},
+  {key:"water", name:"Вода", field:"waterPayment", color:"var(--water)"},
+  {key:"rent", name:"Квартплата", field:"rent", color:"var(--rent)"}
+];
+function trendResOn(){
+  var r = prefs.trendRes || {gas:1, electro:1, water:1};
+  return TREND_RES.filter(function(x){ return !!r[x.key]; });
+}
+function trendIsStack(){ return prefs.trendView==="stack"; }
+function renderTrendStack(keys1){
+  var on = trendResOn();
+  function val(k, r){ var m = data.monthly[k]; return m ? (+m[r.field]||0) : 0; }
+  function tot(k){ return on.reduce(function(s,r){ return s+val(k,r); }, 0); }
+  var totals = keys1.map(tot);
+  var maxY = Math.max.apply(null, totals.concat([1]));
+  document.getElementById("trendLegend").style.display = "none";
+  document.getElementById("trendInfo").textContent = "";
+  document.getElementById("yearBars").innerHTML = keys1.map(function(k, i){
+    var t = totals[i], h = t>0 ? Math.max(3, Math.round(t/maxY*100)) : 0;
+    var parts = on.map(function(r){ var v = val(k,r); return v>0 ? '<i style="flex-grow:'+v+';background:'+r.color+'"></i>' : ""; }).join("");
+    var bar = h ? '<div class="yb stack" style="height:'+h+'%">'+parts+'<span class="ybval">'+Math.round(t).toLocaleString("ru-RU")+'</span></div>' : "";
+    return '<div class="yb-slot'+(k===trendSelKey?' sel':'')+'" data-i="'+i+'">'+bar+'</div>';
+  }).join("");
+  document.getElementById("yearLabelsRow").innerHTML = keys1.map(function(k){ return "<span>"+periodLabel(k, trendMode1==="year")+"</span>"; }).join("");
+  var f = function(v){ return Math.round(v).toLocaleString("ru-RU"); };
+  document.getElementById("yAxis").innerHTML = '<span>'+f(maxY)+'</span><span>'+f(maxY/2)+'</span><span>0</span>';
+
+  // список-разбивка: выбранный месяц или весь период; строки включают/выключают ресурс
+  var sel = (trendSelKey && keys1.indexOf(trendSelKey)>=0) ? [trendSelKey] : keys1.filter(function(k){ return !!data.monthly[k]; });
+  var sums = TREND_RES.map(function(r){ return sel.reduce(function(s,k){ return s+val(k,r); }, 0); });
+  var onKeys = {}; on.forEach(function(r){ onKeys[r.key] = true; });
+  var onSum = TREND_RES.reduce(function(s,r,i){ return s + (onKeys[r.key] ? sums[i] : 0); }, 0) || 1;
+  var head = (sel.length===1 && trendSelKey) ? (MONTH_FULL[monthNum(sel[0])-1]+" "+yearOf(sel[0])) : ("Весь период · "+sel.length+" мес.");
+  var html = '<div class="res-head"><span>'+head+'</span>'+((sel.length===1 && trendSelKey) ? '<button id="trendResAll">× весь период</button>' : '')+'</div>';
+  TREND_RES.forEach(function(r, i){
+    var isOn = !!onKeys[r.key];
+    html += '<div class="res-row'+(isOn?'':' off')+'" data-res="'+r.key+'"><span class="rd" style="background:'+r.color+'"></span><span class="rn">'+r.name+'</span><span class="rv">'+f(sums[i])+' грн</span><span class="rp">'+(isOn ? Math.round(sums[i]/onSum*100)+'%' : '—')+'</span></div>';
+  });
+  html += '<div class="res-tot"><span>Итого (включено)</span><span>'+f(TREND_RES.reduce(function(s,r,i){ return s+(onKeys[r.key]?sums[i]:0); },0))+' грн</span></div>';
+  html += '<div class="res-hint">Тап по столбцу — разбивка месяца, по строке — показать или скрыть ресурс.</div>';
+  document.getElementById("trendRes").innerHTML = html;
+}
+function applyTrendView(){
+  var st = trendIsStack();
+  document.querySelectorAll("#segTrendView .seg-btn").forEach(function(b){ b.classList.toggle("active", (b.getAttribute("data-view")==="stack")===st); });
+  document.getElementById("trendMetricBox").style.display = st ? "none" : "";
+  document.getElementById("trendRes").style.display = st ? "" : "none";
+}
+document.getElementById("segTrendView").addEventListener("click", function(e){
+  var b = e.target.closest(".seg-btn"); if(!b) return;
+  prefs.trendView = b.getAttribute("data-view"); savePrefs();
+  trendSelKey = null; applyTrendView(); renderTrendChart();
+});
+document.getElementById("trendRes").addEventListener("click", function(e){
+  if(e.target.id==="trendResAll"){ trendSelKey = null; renderTrendChart(); return; }
+  var row = e.target.closest(".res-row"); if(!row) return;
+  var r = prefs.trendRes || {gas:1, electro:1, water:1}, k = row.getAttribute("data-res");
+  r[k] = r[k] ? 0 : 1; prefs.trendRes = r; savePrefs(); renderTrendChart();
 });
 function renderTrendChart(){
   var metricKey = document.getElementById("trendMetric").value;
@@ -1612,6 +1697,8 @@ function renderTrendChart(){
 
   var keys1 = periodSelectionToKeys(1) || [];
   (function(){ var k2 = periodSelectionToKeys(2), t = keysText(keys1); if(k2 && k2.length) t += "  ·  сравнение: "+keysText(k2); document.getElementById("trendSub").textContent = t; })();
+  applyTrendView();
+  if(trendIsStack()){ renderTrendStack(keys1); return; }
   var keys2raw = periodSelectionToKeys(2);
   var isYear1 = trendMode1==="year";
   var isYear2 = keys2raw && document.getElementById("trendPeriod2").value.indexOf("year:")===0;
@@ -1807,7 +1894,7 @@ function renderMain(){
     }
   }
   function deltaHtml(s, i){
-    if(!prevSvc) return "";
+    if(!prevSvc || !s.unit) return "";      // только газ, свет, вода (доставка и квартплата почти постоянны)
     var ps = prevSvc[i], parts = [];
     var dv = Math.round(s.val - ps.val);
     if(dv!==0) parts.push('<span class="'+(dv>0?"up":"down")+'">'+(dv>0?"↑ ":"↓ ")+Math.abs(dv).toLocaleString("ru-RU")+' грн</span>');
@@ -2635,7 +2722,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.38";
+var APP_VERSION = "1.39";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
