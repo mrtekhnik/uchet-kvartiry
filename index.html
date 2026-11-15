@@ -179,6 +179,10 @@
   .yearbars .yb-slot{cursor:pointer;-webkit-tap-highlight-color:transparent;}
   .yearbars .yb-slot.sel .yb:not(.series-b){background:var(--accent);}
   #trendPresets.open{display:flex;margin-top:0;}
+  #segTrendView .seg-btn{padding:6px 10px;}
+  .trend-res.few{justify-content:flex-start;gap:8px;}
+  #trendLines svg{display:block;width:100%;height:auto;}
+  #trendLines text{font-family:inherit;font-weight:700;fill:var(--muted);}
   .trend-presets{margin-top:0;gap:6px;padding:0 6px 10px;}
   #trendPresetsBtn.on{border:1.5px solid var(--primary);}
   .trend-presets button{flex:1;border:1.5px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:5px 4px;font-size:calc(12.5px * var(--fs));font-weight:700;font-family:inherit;-webkit-tap-highlight-color:transparent;}
@@ -578,9 +582,10 @@
             <button class="seg-btn" data-mode="range">Период</button>
           </div>
         </div>
-        <div style="padding:0 6px 8px;display:flex;align-items:center;justify-content:space-between;gap:8px"><div class="seg" id="segTrendView" style="display:inline-flex">
+        <div style="padding:0 6px 8px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px"><div class="seg" id="segTrendView" style="display:inline-flex">
           <button class="seg-btn active" data-view="metric">Показатель</button>
-          <button class="seg-btn" data-view="stack">По ресурсам</button>
+          <button class="seg-btn" data-view="stack">Ресурсы</button>
+          <button class="seg-btn" data-view="cons">Расход</button>
         </div><button class="btn-secondary" id="trendPresetsBtn" data-toggle="trendPresets" style="flex:none;padding:8px 12px">Периоды ▸</button></div>
         <div class="trend-presets toggle-panel" id="trendPresets">
           <button type="button" data-p="3">3 мес</button><button type="button" data-p="6">6 мес</button><button type="button" data-p="12">12 мес</button><button type="button" data-p="all">Всё</button>
@@ -616,6 +621,7 @@
           </div>
         </div>
         <div class="trend-info hide" id="trendSum" style="padding-top:8px"></div>
+        <div id="trendLines" style="display:none"></div>
         <div class="trend-res" id="trendRes" style="display:none"></div>
       </div>
 
@@ -1629,11 +1635,7 @@ function trendInfoText(keys1, metric){
   if(prefs.trendPick!==false) txt += " · показан в «Услугах» и «Структуре»";
   el.textContent = txt;
 }
-document.getElementById("yearBars").addEventListener("click", function(e){
-  var slot = e.target.closest(".yb-slot"); if(!slot) return;
-  var keys1 = periodSelectionToKeys(1) || [];
-  var key = keys1[parseInt(slot.getAttribute("data-i"),10)];
-  if(!key) return;
+function trendPickMonth(key){
   trendSelKey = (trendSelKey===key) ? null : key;      // повторный тап снимает выбор
   if(trendSelKey && prefs.trendPick!==false){
     mainMonthEl.value = key;
@@ -1643,6 +1645,13 @@ document.getElementById("yearBars").addEventListener("click", function(e){
     });
     renderMain();
   } else renderTrendChart();
+}
+document.getElementById("yearBars").addEventListener("click", function(e){
+  var slot = e.target.closest(".yb-slot"); if(!slot) return;
+  var keys1 = periodSelectionToKeys(1) || [];
+  var key = keys1[parseInt(slot.getAttribute("data-i"),10)];
+  if(!key) return;
+  trendPickMonth(key);
 });
 
 // ---------- «Динамика»: режим «По ресурсам» (столбики с цветными частями, в гривнах) ----------
@@ -1661,6 +1670,7 @@ var METRIC_COLOR = {gasPayment:"var(--gas)", gasConsumption:"var(--gas)", gasRea
   elPayment:"var(--electro)", elConsumption:"var(--electro)", elReadingRaw:"var(--electro)",
   waterPayment:"var(--water)", waterConsumption:"var(--water)", waterReadingRaw:"var(--water)", rent:"var(--rent)"};
 function trendIsStack(){ return prefs.trendView==="stack"; }
+function trendIsCons(){ return prefs.trendView==="cons"; }
 function renderTrendStack(keys1){
   var on = trendResOn();
   function val(k, r){ var m = data.monthly[k]; return m ? (+m[r.field]||0) : 0; }
@@ -1699,18 +1709,101 @@ document.getElementById("trendPresets").addEventListener("click", function(e){
   prefs.trendPreset = (prefs.trendPreset===pr) ? "" : pr; savePrefs();
   trendSelKey = null; renderTrendChart();
 });
+// ---------- «Динамика»: режим «Расход» (линии: м³ — слева, кВт·ч — справа) ----------
+var CONS_RES = [
+  {key:"gas", name:"Газ", field:"gasReading", unit:"м³", axis:"L", color:"var(--gas)"},
+  {key:"electro", name:"Свет", field:"elReading", unit:"кВт·ч", axis:"R", color:"var(--electro)"},
+  {key:"water", name:"Вода", field:"waterReading", unit:"м³", axis:"L", color:"var(--water)"}
+];
+function niceCeil(v){
+  if(!(v>0)) return 1;
+  var p = Math.pow(10, Math.floor(Math.log(v)/Math.LN10)), n = v/p;
+  var m = n<=1 ? 1 : n<=2 ? 2 : n<=2.5 ? 2.5 : n<=5 ? 5 : 10;
+  return m*p;
+}
+var consGeom = null;
+function renderTrendCons(keys1){
+  var c = prefs.trendCons || {gas:1, electro:1, water:1};
+  var on = CONS_RES.filter(function(r){ return !!c[r.key]; });
+  document.getElementById("trendLegend").style.display = "none";
+  document.getElementById("trendInfo").textContent = "";
+  document.getElementById("trendRes").classList.add("few");
+  document.getElementById("trendRes").innerHTML = CONS_RES.map(function(r){
+    var isOn = !!c[r.key];
+    return '<button type="button" class="chip'+(isOn?'':' off')+'" data-res="'+r.key+'" style="--c:'+r.color+'" aria-pressed="'+(isOn?'true':'false')+'">'+r.name+'</button>';
+  }).join("");
+  var vals = {}; CONS_RES.forEach(function(r){ vals[r.key] = keys1.map(function(k){ return data.monthly[k] ? consumption(k, r.field) : null; }); });
+  var W = 340, H = 230, pl = 40, pr = 40, pt = 22, pb = 26, pw = W-pl-pr, ph = H-pt-pb, n = keys1.length;
+  function mx(axis){ var a = []; on.forEach(function(r){ if(r.axis===axis) vals[r.key].forEach(function(v){ if(v!=null && v>0) a.push(v); }); }); return a.length ? niceCeil(Math.max.apply(null,a)) : 0; }
+  var maxL = mx("L"), maxR = mx("R");
+  var hasL = on.some(function(r){ return r.axis==="L"; }), hasR = on.some(function(r){ return r.axis==="R"; });
+  var left0 = hasL ? pl : 12, right0 = hasR ? pr : 12;       // без оси — поле поменьше
+  pw = W-left0-right0;
+  function X(i){ return n>1 ? left0 + i*pw/(n-1) : left0+pw/2; }
+  function Y(v, mxv){ return pt + ph - (v/(mxv||1))*ph; }
+  var fm = function(v){ return v.toLocaleString("ru-RU",{maximumFractionDigits:v<10?1:0}); };
+  var g = '';
+  for(var t=0;t<=2;t++){
+    var yy = pt + ph - t*ph/2;
+    g += '<line x1="'+left0+'" x2="'+(W-right0)+'" y1="'+yy+'" y2="'+yy+'" stroke="var(--line)" stroke-width="1"/>';
+    if(hasL) g += '<text x="'+(left0-5)+'" y="'+(yy+3)+'" font-size="9.5" text-anchor="end">'+fm(maxL*t/2)+'</text>';
+    if(hasR) g += '<text x="'+(W-right0+5)+'" y="'+(yy+3)+'" font-size="9.5" text-anchor="start">'+fm(maxR*t/2)+'</text>';
+  }
+  if(hasL) g += '<text x="'+(left0-5)+'" y="'+(pt-9)+'" font-size="9.5" text-anchor="end">м³</text>';
+  if(hasR) g += '<text x="'+(W-right0+5)+'" y="'+(pt-9)+'" font-size="9.5" text-anchor="start">кВт·ч</text>';
+  var step = Math.ceil(n/12), selI = trendSelKey ? keys1.indexOf(trendSelKey) : -1;
+  keys1.forEach(function(k,i){
+    if(i%step===0 || i===selI) g += '<text x="'+X(i)+'" y="'+(H-8)+'" font-size="9.5" text-anchor="middle"'+(i===selI?' style="fill:var(--primary)"':'')+'>'+periodLabel(k, trendMode1==="year" && !prefs.trendPreset)+'</text>';
+  });
+  if(selI>=0) g += '<line x1="'+X(selI)+'" x2="'+X(selI)+'" y1="'+pt+'" y2="'+(pt+ph)+'" stroke="var(--primary)" stroke-width="1.5" stroke-dasharray="3 3"/>';
+  on.forEach(function(r){
+    var mxv = r.axis==="L" ? maxL : maxR, path = '', pen = false, dots = '';
+    vals[r.key].forEach(function(v,i){
+      if(v==null){ pen = false; return; }
+      var x = X(i), y = Y(Math.max(0,v), mxv);
+      path += (pen?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)+' '; pen = true;
+      dots += '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+(i===selI?5:3)+'" style="fill:'+r.color+'"'+(i===selI?' stroke="var(--surface)" stroke-width="1.5"':'')+'/>';
+    });
+    g += '<path d="'+path+'" fill="none" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" style="stroke:'+r.color+'"/>'+dots;
+  });
+  if(!on.length || !on.some(function(r){ return vals[r.key].some(function(v){ return v!=null; }); })) g += '<text x="'+(W/2)+'" y="'+(H/2)+'" font-size="12" text-anchor="middle">Нет данных о расходе</text>';
+  consGeom = {keys:keys1, left0:left0, pw:pw, W:W, n:n};
+  document.getElementById("trendLines").innerHTML = '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Расход по месяцам">'+g+'</svg>';
+
+  // строка итога: выбранный месяц или за весь период (сумма)
+  var one = (trendSelKey && selI>=0) ? trendSelKey : null;
+  var parts = on.map(function(r){
+    var arr = one ? [vals[r.key][selI]] : vals[r.key], cnt = 0, sum = 0;
+    arr.forEach(function(v){ if(v!=null){ sum += v; cnt++; } });
+    return r.name.toLowerCase()+' <b>'+(cnt ? fm(sum)+' '+r.unit : '—')+'</b>';
+  }).join(' · ');
+  var ttl = one ? (MONTH_FULL[monthNum(one)-1]+" "+yearOf(one)) : "Весь период";
+  document.getElementById("trendSum").innerHTML = '<span>'+ttl+(parts ? ' — '+parts : '')+'</span>'+(one ? '<button type="button" id="trendResAll">Показать весь период</button>' : '');
+}
+document.getElementById("trendLines").addEventListener("click", function(e){
+  if(!consGeom || consGeom.n<1) return;
+  var svg = this.querySelector("svg"); if(!svg) return;
+  var r = svg.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * consGeom.W;
+  var i = consGeom.n>1 ? Math.round((x - consGeom.left0) / consGeom.pw * (consGeom.n-1)) : 0;
+  i = Math.max(0, Math.min(consGeom.n-1, i));
+  trendPickMonth(consGeom.keys[i]);
+});
 function applyTrendView(){
-  var st = trendIsStack();
+  var st = trendIsStack(), cs = trendIsCons(), vw = prefs.trendView || "metric";
   var pr = prefs.trendPreset || "";
   document.querySelectorAll("#trendPresets button").forEach(function(b){ b.classList.toggle("active", b.getAttribute("data-p")===pr); });
   document.getElementById("trendPresetsBtn").classList.toggle("on", !!pr);
   document.querySelectorAll("#segTrend .seg-btn").forEach(function(b){ b.classList.toggle("active", !pr && b.getAttribute("data-mode")===trendMode1); });
-  document.querySelectorAll("#segTrendView .seg-btn").forEach(function(b){ b.classList.toggle("active", (b.getAttribute("data-view")==="stack")===st); });
-  document.getElementById("trendMetricBox").style.display = st ? "none" : "";
-  document.getElementById("trendRes").style.display = st ? "" : "none";
-  document.getElementById("trendSum").classList.toggle("hide", !st);
+  document.querySelectorAll("#segTrendView .seg-btn").forEach(function(b){ b.classList.toggle("active", b.getAttribute("data-view")===vw); });
+  document.getElementById("trendMetricBox").style.display = (st||cs) ? "none" : "";
+  document.getElementById("trendRes").style.display = (st||cs) ? "" : "none";
+  document.getElementById("trendSum").classList.toggle("hide", !(st||cs));
+  document.getElementById("trendChartBox").style.display = cs ? "none" : "";
+  document.getElementById("trendLines").style.display = cs ? "" : "none";
   document.getElementById("trendChartBox").classList.toggle("tall", st);
   if(!st) document.getElementById("trendChartBox").classList.remove("has-sel");
+  if(!cs) document.getElementById("trendLines").innerHTML = "";
+  if(!cs) document.getElementById("trendRes").classList.remove("few");
 }
 document.getElementById("segTrendView").addEventListener("click", function(e){
   var b = e.target.closest(".seg-btn"); if(!b) return;
@@ -1722,7 +1815,9 @@ document.getElementById("trendSum").addEventListener("click", function(e){
 });
 document.getElementById("trendRes").addEventListener("click", function(e){
   var row = e.target.closest(".chip"); if(!row) return;
-  var r = prefs.trendRes || {gas:1, electro:1, water:1}, k = row.getAttribute("data-res");
+  var k = row.getAttribute("data-res");
+  if(trendIsCons()){ var c = prefs.trendCons || {gas:1, electro:1, water:1}; c[k] = c[k] ? 0 : 1; prefs.trendCons = c; savePrefs(); renderTrendChart(); return; }
+  var r = prefs.trendRes || {gas:1, electro:1, water:1};
   r[k] = r[k] ? 0 : 1; prefs.trendRes = r; savePrefs(); renderTrendChart();
 });
 function renderTrendChart(){
@@ -1741,6 +1836,7 @@ function renderTrendChart(){
   (function(){ var k2 = periodSelectionToKeys(2), t = keysText(keys1); if(k2 && k2.length) t += "  ·  сравнение: "+keysText(k2); document.getElementById("trendSub").textContent = t; })();
   applyTrendView();
   if(trendIsStack()){ renderTrendStack(keys1); return; }
+  if(trendIsCons()){ renderTrendCons(keys1); return; }
   var keys2raw = periodSelectionToKeys(2);
   var isYear1 = trendMode1==="year" && !prefs.trendPreset;
   var isYear2 = keys2raw && document.getElementById("trendPeriod2").value.indexOf("year:")===0;
@@ -2765,7 +2861,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.48";
+var APP_VERSION = "1.49";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
