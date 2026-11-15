@@ -178,12 +178,6 @@
   .yearbars .yb{flex:1;background:var(--bar-bg);border-radius:3px 3px 0 0;position:relative;min-height:2px;}
   .yearbars .yb-slot{cursor:pointer;-webkit-tap-highlight-color:transparent;}
   .yearbars .yb-slot.sel .yb:not(.series-b){background:var(--accent);}
-  .trend-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px 6px 4px;}
-  .trend-stats:empty{display:none;}
-  .trend-stats .ts{background:var(--primary-soft);border-radius:var(--radius-sm);padding:8px 10px;min-width:0;}
-  .trend-stats .ts .l{font-size:calc(11.5px * var(--fs));color:var(--muted);font-weight:600;}
-  .trend-stats .ts .v{font-size:calc(16px * var(--fs));font-weight:800;margin-top:2px;overflow-wrap:anywhere;}
-  .trend-stats .ts .v small{font-size:calc(11.5px * var(--fs));font-weight:600;color:var(--muted);}
   .trend-presets{display:flex;gap:6px;padding:0 6px 10px;}
   .trend-presets button{flex:1;border:1.5px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:5px 4px;font-size:calc(12.5px * var(--fs));font-weight:700;font-family:inherit;-webkit-tap-highlight-color:transparent;}
   .trend-presets button.active{border-color:var(--primary);background:var(--primary);color:#fff;}
@@ -622,7 +616,6 @@
         </div>
         <div class="trend-info hide" id="trendSum" style="padding-top:8px"></div>
         <div class="trend-res" id="trendRes" style="display:none"></div>
-        <div class="trend-stats" id="trendStats"></div>
       </div>
 
       <div data-card="structure" class="card">
@@ -1698,7 +1691,6 @@ function renderTrendStack(keys1){
   info.innerHTML = '<span>'+ttl+' — <b>'+f(sum)+' грн</b></span>'+(one ? '<button type="button" id="trendResAll">Показать весь период</button>' : '<span style="font-weight:500;font-size:calc(11.5px * var(--fs));flex-basis:100%">Тап по столбцу — выбрать месяц</span>');
   document.getElementById("trendChartBox").classList.toggle("has-sel", !!one);
   document.querySelectorAll("#yearLabelsRow span").forEach(function(sp, i){ sp.classList.toggle("sel", keys1[i]===one); });
-  renderTrendStats(keys1, tot, "грн", 0, "Самый дорогой месяц");
 }
 document.getElementById("trendPresets").addEventListener("click", function(e){
   var b = e.target.closest("button"); if(!b) return;
@@ -1706,20 +1698,6 @@ document.getElementById("trendPresets").addEventListener("click", function(e){
   prefs.trendPreset = (prefs.trendPreset===pr) ? "" : pr; savePrefs();
   trendSelKey = null; renderTrendChart();
 });
-function renderTrendStats(keys, valFn, unit, dec, big){
-  var el = document.getElementById("trendStats");
-  var rows = [];
-  keys.forEach(function(k){ var v = data.monthly[k] ? valFn(k) : null; if(v!=null) rows.push({k:k, v:v}); });
-  if(!rows.length){ el.innerHTML = ""; return; }
-  var sum = rows.reduce(function(a,r){ return a+r.v; }, 0), top = rows[0];
-  rows.forEach(function(r){ if(r.v>top.v) top = r; });
-  var fm = function(v){ return v.toLocaleString("ru-RU",{minimumFractionDigits:dec,maximumFractionDigits:dec}); };
-  var u = unit ? ' <small>'+unit+'</small>' : "";
-  var tile = function(l,v){ return '<div class="ts"><div class="l">'+l+'</div><div class="v">'+v+'</div></div>'; };
-  el.innerHTML = tile("Всего за период", fm(sum)+u) + tile("В среднем за месяц", fm(sum/rows.length)+u) +
-    tile(big, MONTH_FULL[monthNum(top.k)-1]+' <small>'+fm(top.v)+(unit?' '+unit:'')+'</small>') +
-    tile("Месяцев с данными", rows.length+' <small>из '+keys.length+'</small>');
-}
 function applyTrendView(){
   var st = trendIsStack();
   var pr = prefs.trendPreset || "";
@@ -1838,8 +1816,6 @@ function renderTrendChart(){
     '<span>'+fmtVal(maxY)+'</span>'+
     '<span>'+fmtVal((maxY+minY)/2)+'</span>'+
     '<span>'+fmtVal(minY)+'</span>';
-  if(/ReadingRaw$/.test(metric.key)) document.getElementById("trendStats").innerHTML = "";
-  else renderTrendStats(keys1, metric.calc, metric.unit, decimals, metric.unit==="грн" ? "Самый дорогой месяц" : "Максимум");
 }
 
 function mainReadingsFilled(m){
@@ -2787,7 +2763,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.46";
+var APP_VERSION = "1.47";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
