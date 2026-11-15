@@ -1715,11 +1715,10 @@ var CONS_RES = [
   {key:"electro", name:"Свет", field:"elReading", unit:"кВт·ч", axis:"R", color:"var(--electro)"},
   {key:"water", name:"Вода", field:"waterReading", unit:"м³", axis:"L", color:"var(--water)"}
 ];
-function niceCeil(v){
+function niceCeil(v){      // потолок шкалы с точностью до 2 значащих цифр: 102 -> 110, а не 200
   if(!(v>0)) return 1;
-  var p = Math.pow(10, Math.floor(Math.log(v)/Math.LN10)), n = v/p;
-  var m = n<=1 ? 1 : n<=2 ? 2 : n<=2.5 ? 2.5 : n<=5 ? 5 : 10;
-  return m*p;
+  var p = Math.pow(10, Math.floor(Math.log(v)/Math.LN10) - 1);
+  return Math.ceil(v/p - 1e-9) * p;
 }
 var consGeom = null;
 function renderTrendCons(keys1){
@@ -2861,7 +2860,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.50";
+var APP_VERSION = "1.51";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
