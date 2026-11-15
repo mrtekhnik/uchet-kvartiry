@@ -164,6 +164,9 @@
   .bar-list .bar-item .bl-right{display:flex;align-items:baseline;gap:14px;}
   .bar-list .bar-item .bl-qty{color:var(--muted);font-weight:600;font-size:calc(11.5px * var(--fs));}
   .bar-list .bar-item .bl-cost{font-weight:700;}
+  .bar-list .bar-item .bl-delta{font-size:calc(11px * var(--fs));color:var(--muted);font-weight:600;margin-top:3px;}
+  .bar-list .bar-item .bl-delta .up{color:var(--danger);font-weight:700;}
+  .bar-list .bar-item .bl-delta .down{color:#2e8b57;font-weight:700;}
   .bar-list .bar-item .bl-track{background:var(--bg);border-radius:6px;height:10px;overflow:hidden;}
   .bar-list .bar-item .bl-fill{height:100%;border-radius:6px;}
 
@@ -1795,11 +1798,31 @@ function renderMain(){
   document.getElementById("donutSub").textContent = keysText(modeKeys(donutMode));
   var svcBars = svcForMode(svcMode);
   var maxSvc = Math.max.apply(null, svcBars.map(function(s){return s.val;}).concat([1]));
-  document.getElementById("svcMonthBars").innerHTML = svcBars.map(function(s){
+  // сравнение с прошлым месяцем (только в режиме «Месяц»)
+  var prevSvc = null;
+  if(svcMode==="month"){
+    var pk = prevMonthKey(mKey), pm = data.monthly[pk];
+    if(pm && m){
+      prevSvc = svcTotalsForMonth(pm, {gas:consumption(pk,"gasReading"), el:consumption(pk,"elReading"), water:consumption(pk,"waterReading")});
+    }
+  }
+  function deltaHtml(s, i){
+    if(!prevSvc) return "";
+    var ps = prevSvc[i], parts = [];
+    var dv = Math.round(s.val - ps.val);
+    if(dv!==0) parts.push('<span class="'+(dv>0?"up":"down")+'">'+(dv>0?"↑ ":"↓ ")+Math.abs(dv).toLocaleString("ru-RU")+' грн</span>');
+    if(s.qty!=null && ps.qty!=null){
+      var dq = Math.round((s.qty-ps.qty)*10)/10;
+      if(dq!==0) parts.push('расход '+(dq>0?"+":"−")+Math.abs(dq).toLocaleString("ru-RU")+' '+s.unit);
+    }
+    if(!parts.length) return "";
+    return '<div class="bl-delta">к прошлому месяцу: '+parts.join(" · ")+'</div>';
+  }
+  document.getElementById("svcMonthBars").innerHTML = svcBars.map(function(s, i){
     var pct = Math.round(s.val/maxSvc*100);
     var qtyText = (s.qty!=null) ? '<span class="bl-qty">'+fmtNum(s.qty, s.unit)+'</span>' : '';
     return '<div class="bar-item"><div class="bl-top"><span>'+s.name+'</span><span class="bl-right">'+qtyText+'<span class="bl-cost">'+fmt(s.val)+'</span></span></div>'+
-      '<div class="bl-track"><div class="bl-fill" style="width:'+pct+'%;background:'+s.color+'"></div></div></div>';
+      '<div class="bl-track"><div class="bl-fill" style="width:'+pct+'%;background:'+s.color+'"></div></div>'+deltaHtml(s, i)+'</div>';
   }).join("");
 
   // donut
@@ -2612,7 +2635,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.37";
+var APP_VERSION = "1.38";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
