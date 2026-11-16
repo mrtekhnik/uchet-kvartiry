@@ -505,6 +505,15 @@
         <div id="reminderList"></div>
       </div>
 
+      <div class="card" id="emptyHint" style="display:none">
+        <h2>Данных пока нет</h2>
+        <p style="margin:0 0 10px;color:var(--muted)">Введите первый месяц или восстановите свои данные из файла копии.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="btn-secondary" id="emptyGoInput" style="flex:1">✏️ Ввести месяц</button>
+          <button type="button" class="btn-secondary" id="emptyGoRestore" style="flex:1">⚙ Восстановить из копии</button>
+        </div>
+      </div>
+
       <div data-card="period" class="card">
         <h2>Период для анализа</h2>
         <div class="row2 period-row2">
@@ -1045,55 +1054,11 @@ function fmtNum(n, unit){
   return n.toLocaleString("ru-RU") + (unit? " "+unit : "");
 }
 
-// ---------- Seed data (matches the Excel base: январь 2024 – июнь 2026) ----------
-var SEED_MONTHLY = [
-["2024-01",8740,477,72,10214,185,404,65,115],
-["2024-02",8782,510,73,10276,187,406,91,120],
-["2024-03",8806,335,73,10331,165,408,92,115],
-["2024-04",8813,179,73,10381,144,409,91,117],
-["2024-05",8819,56,72,10439,132,411,46,116],
-["2024-06",8824,48,72,10515,153,413,92,118],
-["2024-07",8828,64,73,10566,232,415,92,118],
-["2024-08",8833,0,73,10628,320,416,91,118],
-["2024-09",8839,20,73,10688,265,418,46,118],
-["2024-10",8848,45,72,10743,259,420,92,117],
-["2024-11",8888,72,73,10792,238,421,92,116],
-["2024-12",8930,318,72,10828,211,422,46,118],
-["2025-01",8984,335,63,10875,156,426,46,118],
-["2025-02",9041,379,63,10902,204,428,183,117],
-["2025-03",9059,453,53,10934,90,430,92,118],
-["2025-04",9066,144,62,10967,139,432,92,118],
-["2025-05",9073,55,63,10999,142,433,182,118],
-["2025-06",9079,56,62,11040,139,435,90,117],
-["2025-07",9084,48,63,11079,177,437,181,171],
-["2025-08",9092,39,62,11135,168,439,181,1],
-["2025-09",9098,64,63,11174,242,442,182,182],
-["2025-10",9113,48,62,11208,168,444,271,118],
-["2025-11",9142,119,62,11232,146,446,181,117],
-["2025-12",9211,231,62,11272,104,447,181,118],
-["2026-01",9313,550,63,11358,173,452,90,118],
-["2026-02",9393,811,62,11415,64,454,452,117],
-["2026-03",9415,636,63,11452,247,457,181,118],
-["2026-04",9422,175,62,11483,159,459,272,117],
-["2026-05",9427,56,63,11522,135,460,181,117],
-["2026-06",9432,44,62,11566,168,462,90,117]
-];
-
+// ---------- Начальные данные: пустая база, только справочные списки (свои данные — через копию или синхронизацию) ----------
 function buildDefaultData(){
-  var monthly = {};
-  SEED_MONTHLY.forEach(function(row){
-    monthly[row[0]] = {
-      gasReading:row[1], gasPayment:row[2], deliveryPayment:row[3],
-      elReading:row[4], elPayment:row[5],
-      waterReading:row[6], waterPayment:row[7],
-      rent:row[8]
-    };
-  });
   return {
-    monthly: monthly,
-    extra: [
-      {id:"seed1", date:"2024-01-10", category:"Интернет", amount:350, note:"Абонплата за январь"}
-    ],
+    monthly: {},
+    extra: [],
     categories: ["Аренда","Интернет","Страховка","Ремонт","Другие расходы"],
     eventCategories: ["Счётчики","Ремонт","Обслуживание","Контроль","Другое"],
     info: [
@@ -1111,10 +1076,7 @@ function buildDefaultData(){
       {id:"i12", label:"Телефон аварийной службы", value:""},
       {id:"i13", label:"Прочее", value:""}
     ],
-    events: [
-      {id:"ev1", date:"2024-03-15", category:"Счётчики", type:"Поверка счётчика газа",
-       description:"Плановая поверка выполнена", note:"Свидетельство действительно до 2034 г."}
-    ]
+    events: []
   };
 }
 
@@ -2002,6 +1964,7 @@ function modeKeys(mode){
 }
 function renderMain(){
   renderReminders();
+  document.getElementById("emptyHint").style.display = (Object.keys(data.monthly).length===0 && data.extra.length===0) ? "" : "none";
   updateBackToTodayBtn();
   var mKey = mainMonthEl.value;
   var yKey = mainYearEl.value;
@@ -2879,7 +2842,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.59";
+var APP_VERSION = "1.60";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
@@ -3076,7 +3039,7 @@ document.getElementById("resetAllBtn").addEventListener("click", function(){
   renderInputTab();
   renderRefTab();
   renderExtraTab();
-  document.getElementById("backupStatus").textContent = "Данные сброшены к примеру по умолчанию.";
+  document.getElementById("backupStatus").textContent = "Все данные удалены — приложение пустое.";
   document.getElementById("backupStatus").style.color = "var(--muted)";
 });
 
@@ -3214,6 +3177,11 @@ function rerenderCharts(){ try{ renderMain(); }catch(e){} }
 function openSettings(){ renderSettings(); renderSyncSettings(); document.getElementById("fitSel").value = fitMode(); renderFitDiag(); document.getElementById("undoSecSel").value = String(undoSeconds()); document.getElementById("settingsSheetBg").classList.add("show"); }
 function closeSettings(){ document.getElementById("settingsSheetBg").classList.remove("show"); }
 document.getElementById("gearBtn").addEventListener("click", openSettings);
+document.getElementById("emptyGoInput").addEventListener("click", function(){ document.getElementById("mainEditMonthBtn").click(); });
+document.getElementById("emptyGoRestore").addEventListener("click", function(){
+  openSettings();
+  setTimeout(function(){ var el = document.getElementById("backupImportInput"); if(el && el.parentNode && el.parentNode.scrollIntoView) el.parentNode.scrollIntoView({block:"center"}); }, 50);
+});
 document.getElementById("settingsClose").addEventListener("click", closeSettings);
 document.querySelectorAll("nav.tabbar .tab-btn").forEach(function(b){ b.addEventListener("click", closeSettings); });
 document.getElementById("settingsSheetBg").addEventListener("click", function(e){ if(e.target===this) closeSettings(); });
