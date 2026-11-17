@@ -333,7 +333,7 @@
   /* ---------- Широкий экран (монитор): главная в две колонки, остальные вкладки — читаемой ширины ---------- */
   @media (min-width:1000px){
     .app, nav.tabbar{max-width:1200px;}
-    #tab-main.active{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:16px;grid-auto-rows:1px;align-items:start;}
+    #tab-main.active{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:16px;grid-auto-flow:row dense;grid-auto-rows:1px;align-items:start;}
     #tab-main > .card{margin-bottom:0;}
     #tab-main > .conflict-card, #tab-main > .reminder-card, #tab-main > #emptyHint{grid-column:1 / -1;}
     #tab-input, #tab-extra, #tab-ref{max-width:760px;margin-left:auto;margin-right:auto;}
@@ -2865,7 +2865,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.63";
+var APP_VERSION = "1.64";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
@@ -3119,10 +3119,16 @@ Object.keys(THEMES).forEach(function(k){ Object.keys(THEMES[k].vars).forEach(fun
 function layoutMain(){
   var m = document.getElementById("tab-main");
   if(!m) return;
-  var grid = getComputedStyle(m).display==="grid";
+  var cs = getComputedStyle(m);
+  var grid = cs.display==="grid";
+  var cols = grid ? cs.gridTemplateColumns.split(" ").length : 1;
+  var n = 0;
   Array.prototype.forEach.call(m.children, function(c){
-    if(!grid){ c.style.gridRowEnd=""; return; }
-    if(c.offsetParent===null && getComputedStyle(c).display==="none"){ c.style.gridRowEnd=""; return; }
+    if(!grid){ c.style.gridRowEnd=""; c.style.gridColumn=""; return; }
+    if(getComputedStyle(c).display==="none"){ c.style.gridRowEnd=""; c.style.gridColumn=""; return; }
+    var all = c.classList.contains("conflict-card") || c.classList.contains("reminder-card") || c.id==="emptyHint";
+    c.style.gridColumn = all ? "1 / -1" : String((n % cols) + 1);
+    if(!all) n++;
     c.style.gridRowEnd="span 1";
     var h = c.getBoundingClientRect().height;
     c.style.gridRowEnd = "span " + Math.ceil(h + 12);
