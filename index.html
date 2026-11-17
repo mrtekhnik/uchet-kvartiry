@@ -348,7 +348,6 @@
     body.w-narrow #tab-main.active, body.w-mid #tab-main.active{display:block;}
     body.w-narrow #tab-main > .card, body.w-mid #tab-main > .card{margin-bottom:12px;}
   }
-  @media (min-width:1800px){ body.w-full #tab-main.active{grid-template-columns:repeat(3,minmax(0,1fr));} }
   .month-btns .btn-secondary{padding:6px 10px;font-size:calc(12px * var(--fs));white-space:nowrap;}
   .month-row-top .field input{padding:8px 10px;}
   .sync-btn{position:absolute;right:58px;top:10px;background:rgba(255,255,255,.16);color:#fff;border-radius:10px;font-size:calc(18px * var(--fs));line-height:1;padding:7px 10px;}
@@ -2865,7 +2864,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.65";
+var APP_VERSION = "1.66";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
