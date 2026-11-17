@@ -2865,7 +2865,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.64";
+var APP_VERSION = "1.65";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
@@ -3122,16 +3122,35 @@ function layoutMain(){
   var cs = getComputedStyle(m);
   var grid = cs.display==="grid";
   var cols = grid ? cs.gridTemplateColumns.split(" ").length : 1;
-  var n = 0;
+  var items = [];
   Array.prototype.forEach.call(m.children, function(c){
-    if(!grid){ c.style.gridRowEnd=""; c.style.gridColumn=""; return; }
-    if(getComputedStyle(c).display==="none"){ c.style.gridRowEnd=""; c.style.gridColumn=""; return; }
-    var all = c.classList.contains("conflict-card") || c.classList.contains("reminder-card") || c.id==="emptyHint";
-    c.style.gridColumn = all ? "1 / -1" : String((n % cols) + 1);
-    if(!all) n++;
-    c.style.gridRowEnd="span 1";
-    var h = c.getBoundingClientRect().height;
-    c.style.gridRowEnd = "span " + Math.ceil(h + 12);
+    c.style.gridRowEnd=""; c.style.gridColumn="";
+    if(!grid || getComputedStyle(c).display==="none") return;
+    if(c.classList.contains("conflict-card") || c.classList.contains("reminder-card") || c.id==="emptyHint"){ c.style.gridColumn="1 / -1"; c.style.gridRowEnd="span "+Math.ceil(c.getBoundingClientRect().height+12); return; }
+    items.push({el:c, h:Math.ceil(c.getBoundingClientRect().height + 12)});
+  });
+  if(!grid) return;
+  var n = items.length, best = null;
+  function split(start, left, cuts, maxH){
+    if(left === 1){
+      var h = 0; for(var i = start; i < n; i++) h += items[i].h;
+      var mx = Math.max(maxH, h);
+      if(best === null || mx < best.mx){ best = {mx: mx, cuts: cuts.concat([n])}; }
+      return;
+    }
+    var acc = 0;
+    for(var e = start; e <= n; e++){
+      split(e, left - 1, cuts.concat([e]), Math.max(maxH, acc));
+      if(e < n) acc += items[e].h;
+    }
+  }
+  split(0, cols, [], 0);
+  var col = 0, idx = 0;
+  best.cuts.forEach(function(end, ci){
+    for(; idx < end; idx++){
+      items[idx].el.style.gridColumn = String(ci + 1);
+      items[idx].el.style.gridRowEnd = "span " + items[idx].h;
+    }
   });
 }
 window.addEventListener("resize", layoutMain);
