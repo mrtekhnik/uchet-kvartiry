@@ -329,6 +329,16 @@
   .month-row-top .field{min-width:150px;}
   .month-btns{display:flex;flex-direction:column;gap:4px;flex:none;}
   @media (max-width:420px){ .month-row-top .field{flex:1 1 150px !important;} }
+
+  /* ---------- Широкий экран (монитор): главная в две колонки, остальные вкладки — читаемой ширины ---------- */
+  @media (min-width:1000px){
+    .app, nav.tabbar{max-width:1200px;}
+    #tab-main{column-count:2;column-gap:16px;}
+    #tab-main > .card{break-inside:avoid;-webkit-column-break-inside:avoid;}
+    #tab-main > .conflict-card, #tab-main > .reminder-card, #tab-main > #emptyHint{column-span:all;}
+    #tab-input, #tab-extra, #tab-ref{max-width:760px;margin-left:auto;margin-right:auto;}
+    #trendLines svg{max-width:720px;margin:0 auto;}
+  }
   .month-btns .btn-secondary{padding:6px 10px;font-size:calc(12px * var(--fs));white-space:nowrap;}
   .month-row-top .field input{padding:8px 10px;}
   .sync-btn{position:absolute;right:58px;top:10px;background:rgba(255,255,255,.16);color:#fff;border-radius:10px;font-size:calc(18px * var(--fs));line-height:1;padding:7px 10px;}
@@ -2842,7 +2852,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.60";
+var APP_VERSION = "1.61";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
