@@ -849,7 +849,8 @@
         <h2>Ссылки на вкладке «Ввод»</h2>
         <div class="info-note">Кнопки рядом с названием услуги. Если указан только адрес — кнопка открывает сайт. Если заполнен «Текст» — кнопка копирует его в буфер и открывает «Поделиться»; в тексте {показание} заменится текущим показанием (из формы или сохранённым за месяц), {расход} — расходом за месяц.</div>
         <div id="linkFields"></div>
-        <button class="btn-secondary" id="addLinkBtn" style="width:100%;text-align:center;margin-top:4px">+ Добавить ссылку</button>
+        <button class="btn-secondary" id="addLinkBtn" style="width:100%;text-align:center;margin-top:4px;display:none">+ Добавить ссылку</button>
+        <button class="btn-secondary" id="linkEditBtn" style="width:100%;text-align:center;margin-top:8px">✎ Редактировать</button>
       </div>
 
       <div class="card">
@@ -2923,10 +2924,21 @@ function renderLinkChips(){
     });
   });
 }
+var linkEdit = false;
 function renderLinkFields(){
   var wrap = document.getElementById("linkFields");
   var rows = linkRows();
-  if(!rows.length){ wrap.innerHTML = '<div class="empty-state">Ссылок нет — добавьте первую.</div>'; return; }
+  document.getElementById("addLinkBtn").style.display = linkEdit ? "block" : "none";
+  document.getElementById("linkEditBtn").textContent = linkEdit ? "✓ Готово" : "✎ Редактировать";
+  if(!rows.length){ wrap.innerHTML = '<div class="empty-state">Ссылок нет — нажмите «Редактировать» и добавьте первую.</div>'; return; }
+  if(!linkEdit){
+    var bn = {}; LINK_BLOCKS.forEach(function(x){ bn[x[0]] = x[1]; });
+    wrap.innerHTML = rows.map(function(l){
+      return '<div class="info-view-row"><div class="ivl">'+escH(l.label||"(без названия)")+' · '+escH(bn[l.block]||"")+'</div>'+
+        '<div class="ivv">'+(l.url?escH(l.url):'<span style="opacity:.6">адрес не задан</span>')+(l.text?'<br>'+escH(l.text):"")+'</div></div>';
+    }).join("");
+    return;
+  }
   wrap.innerHTML = rows.map(function(l){
     var opts = LINK_BLOCKS.map(function(x){ return '<option value="'+x[0]+'"'+(x[0]===l.block?" selected":"")+'>'+x[1]+'</option>'; }).join("");
     return '<div class="info-row" data-lid="'+l.id+'">'+
@@ -2962,6 +2974,7 @@ function renderLinkFields(){
     });
   });
 }
+document.getElementById("linkEditBtn").addEventListener("click", function(){ linkEdit = !linkEdit; renderLinkFields(); });
 document.getElementById("addLinkBtn").addEventListener("click", function(){
   data.info = data.info.filter(function(x){ return x.id!=="lnk_none"; });
   data.info.push({id:"lnk_n"+Date.now(), label:"Новая ссылка", value:linkPack({url:"", text:"", block:"el"})});
@@ -2984,7 +2997,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.70";
+var APP_VERSION = "1.71";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
