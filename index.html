@@ -1169,7 +1169,8 @@ function entriesOf(dt){
   Object.keys(dt.monthly||{}).forEach(function(k){ out["m:"+k] = normD("m", dt.monthly[k]); });
   (dt.extra||[]).forEach(function(e){ out["x:"+e.id] = normD("x", e); });
   (dt.events||[]).forEach(function(e){ out["v:"+e.id] = normD("v", e); });
-  (dt.info||[]).forEach(function(r,i){ out["i:"+r.id] = normD("i", {label:r.label, value:r.value, o:i}); });
+  var oi = 0;   // порядок считаем только по обычным полям: скрытые «lnk_…» (ссылки) на разных устройствах стоят по-разному
+  (dt.info||[]).forEach(function(r){ var lk = String(r.id).indexOf("lnk_")===0; out["i:"+r.id] = normD("i", {label:r.label, value:r.value, o:(lk ? 99999 : ++oi)}); });
   return out;
 }
 var prevSnap = {}, prevCats = {categories:[], eventCategories:[]};
@@ -2876,8 +2877,10 @@ function linkPack(l){ return JSON.stringify({u:l.url||"", t:l.text||"", b:l.bloc
 function linkRows(){ return data.info.filter(function(r){ return isLinkRow(r) && r.id!=="lnk_none"; }).map(linkParse); }
 function seedLinks(){
   if(data.info.some(isLinkRow)) return;     // «lnk_none» — метка «ссылки намеренно удалены»
-  LINK_SEED.forEach(function(l){ data.info.push({id:l.id, label:l.label, value:linkPack(l)}); });
-  save();
+  // тихо, без пометки «изменено» (mods=0): иначе два устройства, добавив одинаковые ссылки, спорили бы при синхронизации
+  data.mods = data.mods||{};
+  LINK_SEED.forEach(function(l){ data.info.push({id:l.id, label:l.label, value:linkPack(l)}); data.mods["i:"+l.id] = 0; });
+  prevSnap = snapStrings(data); persist(data);
 }
 function currentReading(block){
   var f = {gas:"gasReading", el:"elReading", water:"waterReading"}[block];
@@ -2981,7 +2984,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.69";
+var APP_VERSION = "1.70";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
