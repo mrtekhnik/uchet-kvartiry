@@ -723,7 +723,7 @@
               <span class="prev-badge" id="prevbadge_gas" style="display:none"></span>
               <div class="hint" id="hint_gas"></div></div>
             <div class="field"><label>Оплата, грн</label>
-              <input type="number" inputmode="decimal" id="f_gasPayment" placeholder="0">
+              <div class="inp-wrap"><input type="number" inputmode="decimal" id="f_gasPayment" placeholder="0"><button type="button" class="copy-mini" id="copy_pgas" title="Скопировать сумму" aria-label="Скопировать сумму" style="display:none">⧉</button></div>
               <div class="hint hint-auto" id="autohint_gasPayment"></div></div>
           </div>
         </div>
@@ -739,7 +739,7 @@
               <span class="prev-badge" id="prevbadge_el" style="display:none"></span>
               <div class="hint" id="hint_el"></div></div>
             <div class="field"><label>Оплата, грн</label>
-              <input type="number" inputmode="decimal" id="f_elPayment" placeholder="0"></div>
+              <div class="inp-wrap"><input type="number" inputmode="decimal" id="f_elPayment" placeholder="0"><button type="button" class="copy-mini" id="copy_pel" title="Скопировать сумму" aria-label="Скопировать сумму" style="display:none">⧉</button></div></div>
           </div>
         </div>
 
@@ -754,7 +754,7 @@
               <span class="prev-badge" id="prevbadge_water" style="display:none"></span>
               <div class="hint" id="hint_water"></div></div>
             <div class="field"><label>Оплата, грн</label>
-              <input type="number" inputmode="decimal" id="f_waterPayment" placeholder="0"></div>
+              <div class="inp-wrap"><input type="number" inputmode="decimal" id="f_waterPayment" placeholder="0"><button type="button" class="copy-mini" id="copy_pwater" title="Скопировать сумму" aria-label="Скопировать сумму" style="display:none">⧉</button></div></div>
           </div>
         </div>
 
@@ -765,9 +765,9 @@
           </div>
           <div class="row2">
             <div class="field" style="margin-bottom:0"><label>Квартплата, грн</label>
-              <input type="number" inputmode="decimal" id="f_rent" placeholder="0"></div>
+              <div class="inp-wrap"><input type="number" inputmode="decimal" id="f_rent" placeholder="0"><button type="button" class="copy-mini" id="copy_prent" title="Скопировать сумму" aria-label="Скопировать сумму" style="display:none">⧉</button></div></div>
             <div class="field" style="margin-bottom:0"><label>Доставка газа, грн</label>
-              <input type="number" inputmode="decimal" id="f_deliveryPayment" placeholder="0">
+              <div class="inp-wrap"><input type="number" inputmode="decimal" id="f_deliveryPayment" placeholder="0"><button type="button" class="copy-mini" id="copy_pdel" title="Скопировать сумму" aria-label="Скопировать сумму" style="display:none">⧉</button></div>
               <div class="hint hint-auto" id="autohint_deliveryPayment"></div></div>
           </div>
         </div>
@@ -3011,7 +3011,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.72";
+var APP_VERSION = "1.73";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
@@ -4007,16 +4007,17 @@ function legacyCopy(t){
   try{ document.execCommand("copy"); }catch(e){}
   document.body.removeChild(ta);
 }
+var COPY_FIELDS = [["gas","gasReading"],["el","elReading"],["water","waterReading"],["pgas","gasPayment"],["pel","elPayment"],["pwater","waterPayment"],["prent","rent"],["pdel","deliveryPayment"]];
 function renderCopyChips(){
   var key = inputMonthEl.value, m = data.monthly[key] || {};
-  [["gas","gasReading"],["el","elReading"],["water","waterReading"]].forEach(function(x){
+  COPY_FIELDS.forEach(function(x){
     var btn = document.getElementById("copy_"+x[0]), has = m[x[1]]!=null && m[x[1]]!=="";
     btn.style.display = has ? "block" : "none";
     btn.setAttribute("data-copy", has ? String(m[x[1]]) : "");
   });
 }
-["gas","el","water"].forEach(function(k){
-  var btn = document.getElementById("copy_"+k);
+COPY_FIELDS.forEach(function(x){
+  var btn = document.getElementById("copy_"+x[0]);
   btn.addEventListener("click", function(){
     var val = btn.getAttribute("data-copy"); if(!val) return;
     copyText(val).then(function(){
