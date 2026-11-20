@@ -493,6 +493,18 @@
     border-radius:var(--radius-sm);border:1px solid var(--line);background:var(--input-bg);color:var(--ink);
   }
   .info-row textarea[data-info-value]:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft);}
+  .link-edit{border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px;margin-bottom:10px;background:var(--bg);}
+  .link-edit .le-top{display:flex;gap:6px;align-items:center;margin-bottom:8px;}
+  .link-edit .le-lab{display:block;font-size:calc(11px * var(--fs));color:var(--muted);font-weight:600;margin:0 0 3px 2px;}
+  .link-edit input, .link-edit select, .link-edit textarea{
+    display:block;width:100%;box-sizing:border-box;margin:0 0 8px;font-family:inherit;font-size:calc(13.5px * var(--fs));
+    padding:9px 10px;border-radius:var(--radius-sm);border:1px solid var(--line);background:var(--input-bg);color:var(--ink);
+  }
+  .link-edit .le-top input{flex:1;min-width:0;margin:0;font-weight:700;}
+  .link-edit textarea{resize:none;overflow:hidden;line-height:1.35;min-height:62px;}
+  .link-edit input:focus, .link-edit select:focus, .link-edit textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft);}
+  .link-edit .info-del-btn{flex:none;color:var(--danger);background:none;font-size:calc(15px * var(--fs));font-weight:800;padding:4px 6px;line-height:1;}
+  .link-edit > :last-child{margin-bottom:0;}
   .info-row .info-del-btn{flex:none;color:var(--danger);background:none;font-size:calc(15px * var(--fs));font-weight:800;padding:4px 6px;line-height:1;}
 
   select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path fill='%2363797F' d='M5 7l5 5 5-5z'/></svg>");background-repeat:no-repeat;background-position:right 10px center;padding-right:32px;}
@@ -2941,16 +2953,18 @@ function renderLinkFields(){
   }
   wrap.innerHTML = rows.map(function(l){
     var opts = LINK_BLOCKS.map(function(x){ return '<option value="'+x[0]+'"'+(x[0]===l.block?" selected":"")+'>'+x[1]+'</option>'; }).join("");
-    return '<div class="info-row" data-lid="'+l.id+'">'+
-      '<div class="info-row-top"><select class="set-inp" data-lf="block" style="flex:0 0 38%;margin:0">'+opts+'</select>'+
-      '<input type="text" data-lf="label" placeholder="Название кнопки" value="'+esc(l.label)+'" style="flex:1">'+
-      '<button class="info-del-btn" data-ldel="'+l.id+'">✕</button></div>'+
-      '<input type="url" data-lf="url" placeholder="Адрес (https://…)" value="'+esc(l.url)+'" style="width:100%;margin-bottom:4px">'+
-      '<textarea rows="2" data-lf="text" placeholder="Текст (необязательно), например: о/р … ; {показание} м.куб.">'+escH(l.text)+'</textarea>'+
+    return '<div class="link-edit" data-lid="'+l.id+'">'+
+      '<div class="le-top"><input type="text" data-lf="label" placeholder="Название кнопки" value="'+esc(l.label)+'">'+
+      '<button class="info-del-btn" data-ldel="'+l.id+'" title="Удалить">✕</button></div>'+
+      '<label class="le-lab">Рядом с услугой</label><select data-lf="block">'+opts+'</select>'+
+      '<label class="le-lab">Адрес сайта</label><input type="url" inputmode="url" data-lf="url" placeholder="https://…" value="'+esc(l.url)+'">'+
+      '<label class="le-lab">Текст (необязательно)</label><textarea rows="3" data-lf="text" placeholder="например: о/р 2126; адрес; ФИО; {показание} м.куб.">'+escH(l.text)+'</textarea>'+
       '</div>';
   }).join("");
   wrap.querySelectorAll("[data-lid]").forEach(function(row){
     var id = row.getAttribute("data-lid");
+    var ta = row.querySelector("textarea");
+    if(ta){ autoGrow(ta); ta.addEventListener("input", function(){ autoGrow(ta); }); }
     row.querySelectorAll("[data-lf]").forEach(function(el){
       el.addEventListener("change", function(){
         var r = data.info.find(function(x){ return x.id===id; }); if(!r) return;
@@ -2997,7 +3011,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.71";
+var APP_VERSION = "1.72";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
