@@ -2864,7 +2864,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.67";
+var APP_VERSION = "1.68";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
@@ -3914,7 +3914,7 @@ document.getElementById("fitSel").addEventListener("change", function(){ prefs.f
 
 // ---------- клавиатура: прячем нижнюю панель, «Итого/Сохранить» остаются у нижнего края ----------
 (function(){
-  var baseH = window.innerHeight, focusTs = 0, guardT = null, noKb = 0;
+  var baseH = window.innerHeight, focusTs = 0, guardT = null, noKb = 0, sawKb = false;
   var body = document.body;
   function isField(el){ return el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) && el.type!=="checkbox" && el.type!=="file"; }
   function isOpen(){ return body.classList.contains("kb-open"); }
@@ -3940,7 +3940,10 @@ document.getElementById("fitSel").addEventListener("change", function(){ prefs.f
   function check(){
     if(!isOpen()){ stopGuard(); return; }
     if(!isField(document.activeElement)){ closeKb(false); return; }
-    if(Date.now() - focusTs > 900 && !kbShown()){ if(++noKb >= 3) closeKb(true); } else noKb = 0;
+    // клавиатуру считаем закрытой только если мы её уже видели (окно уменьшалось) и она исчезла;
+    // на некоторых телефонах клавиатура не меняет размер окна — тогда ничего не закрываем, пока поле в фокусе
+    if(kbShown()){ sawKb = true; noKb = 0; }
+    else if(sawKb && Date.now() - focusTs > 900){ if(++noKb >= 3) closeKb(true); }
   }
   function onResize(){ if(!isOpen() && !isField(document.activeElement)) baseH = window.innerHeight; setTabH(); setKbh(); check(); }
   window.addEventListener("resize", onResize);
@@ -3950,7 +3953,7 @@ document.getElementById("fitSel").addEventListener("change", function(){ prefs.f
     if(!isField(e.target) || !document.getElementById("tab-input").classList.contains("active")) return;
     if(!document.getElementById("inputCard").contains(e.target) && e.target.id!=="inputMonth") return;
     if(!isOpen()) baseH = Math.max(baseH, window.innerHeight);
-    focusTs = Date.now(); noKb = 0; body.classList.add("kb-open"); setKbh(); setTimeout(setKbh,300);
+    focusTs = Date.now(); noKb = 0; sawKb = false; body.classList.add("kb-open"); setKbh(); setTimeout(setKbh,300);
     if(!guardT) guardT = setInterval(check, 600);       // работает только пока поле в фокусе
     setTimeout(function(){ try{ e.target.scrollIntoView({block:"center", behavior:"smooth"}); }catch(_){} }, 250);
   });
