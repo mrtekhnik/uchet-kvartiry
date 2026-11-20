@@ -703,9 +703,7 @@
         <div class="service-block gas">
           <div class="stitle-row">
             <span class="stitle">🔥 Газ</span>
-            <span class="stitle-links">
-              <a class="link-chip" href="https://my.gas.ua/home" target="_blank" rel="noopener">Газ.юа</a>
-            </span>
+            <span class="stitle-links" data-links="gas"></span>
           </div>
           <div class="row2">
             <div class="field"><label>Показание, м³</label>
@@ -721,10 +719,7 @@
         <div class="service-block electro">
           <div class="stitle-row">
             <span class="stitle">⚡ Электро</span>
-            <span class="stitle-links">
-              <a class="link-chip" href="https://pa.oblenergo.kharkiv.ua/frontend/web/index.php/uk/changed-acc/input-data-to-account" target="_blank" rel="noopener">Показания</a>
-              <a class="link-chip" href="https://my.zbutenergo.kharkov.ua/accounts/12741434/DetailsSaldo" target="_blank" rel="noopener">Счёт</a>
-            </span>
+            <span class="stitle-links" data-links="el"></span>
           </div>
           <div class="row2">
             <div class="field"><label>Показание, кВт·ч</label>
@@ -737,7 +732,10 @@
         </div>
 
         <div class="service-block water">
-          <div class="stitle">💧 Вода</div>
+          <div class="stitle-row">
+            <span class="stitle">💧 Вода</span>
+            <span class="stitle-links" data-links="water"></span>
+          </div>
           <div class="row2">
             <div class="field"><label>Показание, м³</label>
               <div class="inp-wrap"><input type="number" inputmode="decimal" id="f_waterReading" placeholder="0"><button type="button" class="copy-mini" id="copy_water" title="Скопировать показание" aria-label="Скопировать показание" style="display:none">⧉</button></div>
@@ -751,9 +749,7 @@
         <div class="service-block rent">
           <div class="stitle-row">
             <span class="stitle">🏢 Квартплата и доставка газа</span>
-            <span class="stitle-links">
-              <a class="link-chip" href="https://my.grmu.com.ua/" target="_blank" rel="noopener">ГРМУ</a>
-            </span>
+            <span class="stitle-links" data-links="rent"></span>
           </div>
           <div class="row2">
             <div class="field" style="margin-bottom:0"><label>Квартплата, грн</label>
@@ -847,6 +843,13 @@
           <input type="text" id="newCategoryInput" placeholder="Название новой категории">
           <button id="addCategoryBtn">Добавить</button>
         </div>
+      </div>
+
+      <div class="card">
+        <h2>Ссылки на вкладке «Ввод»</h2>
+        <div class="info-note">Кнопки рядом с названием услуги. Если указан только адрес — кнопка открывает сайт. Если заполнен «Текст» — кнопка копирует его в буфер и открывает «Поделиться»; в тексте {показание} заменится текущим показанием (из формы или сохранённым за месяц), {расход} — расходом за месяц.</div>
+        <div id="linkFields"></div>
+        <button class="btn-secondary" id="addLinkBtn" style="width:100%;text-align:center;margin-top:4px">+ Добавить ссылку</button>
       </div>
 
       <div class="card">
@@ -2308,6 +2311,7 @@ function renderMonthList(){
 document.getElementById("monthSearch").addEventListener("input", renderMonthList);
 
 function renderInputTab(){
+  try{ seedLinks(); renderLinkChips(); }catch(e){ console.error("links",e.message); }
   if(!inputMonthEl.value){
     inputMonthEl.value = defaultMonthByDate();
   }
@@ -2644,11 +2648,15 @@ function autoGrow(el){
   if(el.scrollHeight) el.style.height = el.scrollHeight + "px";      // в скрытой/свёрнутой карточке высоту не трогаем
 }
 
+function isLinkRow(r){ return String(r.id).indexOf("lnk_")===0; }
+function visInfo(){ return data.info.filter(function(r){ return !isLinkRow(r); }); }
 function moveInfoRow(id, dir){
-  var idx = data.info.findIndex(function(r){return r.id===id;});
-  if(idx<0) return;
-  var newIdx = idx+dir;
-  if(newIdx<0 || newIdx>=data.info.length) return;
+  var vis = visInfo();
+  var vi = vis.findIndex(function(r){return r.id===id;});
+  if(vi<0) return;
+  var vj = vi+dir;
+  if(vj<0 || vj>=vis.length) return;
+  var idx = data.info.indexOf(vis[vi]), newIdx = data.info.indexOf(vis[vj]);
   var tmp = data.info[idx];
   data.info[idx] = data.info[newIdx];
   data.info[newIdx] = tmp;
@@ -2661,22 +2669,23 @@ function renderInfoFields(){
   var wrap = document.getElementById("infoFields");
   document.getElementById("addInfoFieldBtn").style.display = infoEdit ? "block" : "none";
   document.getElementById("infoEditBtn").textContent = infoEdit ? "✓ Готово" : "✎ Редактировать";
-  if(!data.info.length){
+  var vis = visInfo();
+  if(!vis.length){
     wrap.innerHTML = '<div class="empty-state">Полей пока нет — нажмите «Редактировать» и добавьте первое.</div>';
     return;
   }
   if(!infoEdit){
-    wrap.innerHTML = data.info.map(function(row){
+    wrap.innerHTML = vis.map(function(row){
       return '<div class="info-view-row"><div class="ivl">'+escH(row.label||"(без названия)")+'</div><div class="ivv">'+escH(row.value||"—")+'</div></div>';
     }).join("");
     return;
   }
-  wrap.innerHTML = data.info.map(function(row, idx){
+  wrap.innerHTML = vis.map(function(row, idx){
     return '<div class="info-row" data-id="'+row.id+'">'+
       '<div class="info-row-top">'+
       '<div class="info-order-btns">'+
         '<button class="info-order-btn" data-info-up="'+row.id+'"'+(idx===0?' disabled':'')+'>▲</button>'+
-        '<button class="info-order-btn" data-info-down="'+row.id+'"'+(idx===data.info.length-1?' disabled':'')+'>▼</button>'+
+        '<button class="info-order-btn" data-info-down="'+row.id+'"'+(idx===vis.length-1?' disabled':'')+'>▼</button>'+
       '</div>'+
       '<textarea class="info-label-input" rows="1" data-info-label="'+row.id+'" placeholder="Название">'+esc(row.label)+'</textarea>'+
       '<button class="info-del-btn" data-info-del="'+row.id+'">✕</button>'+
@@ -2848,7 +2857,115 @@ function renderEventList(){
   });
 }
 
+
+// ---------- ссылки на вкладке «Ввод» (хранятся в data.info с id "lnk_…", поэтому синхронизируются) ----------
+var LINK_BLOCKS = [["gas","Газ"],["el","Электро"],["water","Вода"],["rent","Квартплата"]];
+var LINK_SEED = [
+  {id:"lnk_gas_1", label:"Газ.юа", url:"https://my.gas.ua/home", block:"gas"},
+  {id:"lnk_el_1", label:"Показания", url:"https://pa.oblenergo.kharkiv.ua/frontend/web/index.php/uk/changed-acc/input-data-to-account", block:"el"},
+  {id:"lnk_el_2", label:"Счёт", url:"https://my.zbutenergo.kharkov.ua/accounts/12741434/DetailsSaldo", block:"el"},
+  {id:"lnk_water_1", label:"Показания", url:"", block:"water", text:""},
+  {id:"lnk_rent_1", label:"ГРМУ", url:"https://my.grmu.com.ua/", block:"rent"}
+];
+function linkParse(r){
+  var o = {};
+  try{ o = JSON.parse(r.value||"{}") || {}; }catch(e){ o = {}; }
+  return {id:r.id, label:r.label||"", url:o.u||"", text:o.t||"", block:o.b||"el"};
+}
+function linkPack(l){ return JSON.stringify({u:l.url||"", t:l.text||"", b:l.block}); }
+function linkRows(){ return data.info.filter(function(r){ return isLinkRow(r) && r.id!=="lnk_none"; }).map(linkParse); }
+function seedLinks(){
+  if(data.info.some(isLinkRow)) return;     // «lnk_none» — метка «ссылки намеренно удалены»
+  LINK_SEED.forEach(function(l){ data.info.push({id:l.id, label:l.label, value:linkPack(l)}); });
+  save();
+}
+function currentReading(block){
+  var f = {gas:"gasReading", el:"elReading", water:"waterReading"}[block];
+  if(!f) return "";
+  var inp = document.getElementById("f_"+f);
+  var v = inp && inp.value !== "" ? inp.value : "";
+  if(v===""){ var m = data.monthly[inputMonthEl.value]; if(m && m[f]!=null && m[f]!=="") v = m[f]; }
+  return v;
+}
+function currentConsumption(block){
+  var f = {gas:"gasReading", el:"elReading", water:"waterReading"}[block];
+  if(!f || !inputMonthEl.value) return "";
+  var key = inputMonthEl.value, prev = data.monthly[prevMonthKey(key)], rd = currentReading(block);
+  if(rd==="" || !prev || prev[f]==null || prev[f]==="") return "";
+  return Math.round((+rd - +prev[f])*1000)/1000;
+}
+function renderLinkChips(){
+  document.querySelectorAll("[data-links]").forEach(function(box){
+    var b = box.getAttribute("data-links");
+    box.innerHTML = "";
+    linkRows().filter(function(l){ return l.block===b && l.label && (l.url || l.text); }).forEach(function(l){
+      var a;
+      if(l.text){
+        a = document.createElement("button"); a.type = "button";
+        a.addEventListener("click", function(){
+          var rd = currentReading(b);
+          if(rd===""){ toastMsg("Сначала введите показание"); return; }
+          var txt = l.text.replace(/\{показание\}/g, String(rd)).replace(/\{расход\}/g, String(currentConsumption(b)));
+          copyText(txt).then(function(){
+            toastMsg("Скопировано: "+txt);
+            if(navigator.share){ try{ navigator.share({text: txt}).catch(function(){}); }catch(e){} }
+            else if(l.url) window.open(l.url, "_blank", "noopener");
+          });
+        });
+      } else {
+        a = document.createElement("a"); a.href = l.url; a.target = "_blank"; a.rel = "noopener";
+      }
+      a.className = "link-chip"; a.textContent = l.label;
+      box.appendChild(a);
+    });
+  });
+}
+function renderLinkFields(){
+  var wrap = document.getElementById("linkFields");
+  var rows = linkRows();
+  if(!rows.length){ wrap.innerHTML = '<div class="empty-state">Ссылок нет — добавьте первую.</div>'; return; }
+  wrap.innerHTML = rows.map(function(l){
+    var opts = LINK_BLOCKS.map(function(x){ return '<option value="'+x[0]+'"'+(x[0]===l.block?" selected":"")+'>'+x[1]+'</option>'; }).join("");
+    return '<div class="info-row" data-lid="'+l.id+'">'+
+      '<div class="info-row-top"><select class="set-inp" data-lf="block" style="flex:0 0 38%;margin:0">'+opts+'</select>'+
+      '<input type="text" data-lf="label" placeholder="Название кнопки" value="'+esc(l.label)+'" style="flex:1">'+
+      '<button class="info-del-btn" data-ldel="'+l.id+'">✕</button></div>'+
+      '<input type="url" data-lf="url" placeholder="Адрес (https://…)" value="'+esc(l.url)+'" style="width:100%;margin-bottom:4px">'+
+      '<textarea rows="2" data-lf="text" placeholder="Текст (необязательно), например: о/р … ; {показание} м.куб.">'+escH(l.text)+'</textarea>'+
+      '</div>';
+  }).join("");
+  wrap.querySelectorAll("[data-lid]").forEach(function(row){
+    var id = row.getAttribute("data-lid");
+    row.querySelectorAll("[data-lf]").forEach(function(el){
+      el.addEventListener("change", function(){
+        var r = data.info.find(function(x){ return x.id===id; }); if(!r) return;
+        var l = linkParse(r);
+        var g = function(k){ return row.querySelector('[data-lf="'+k+'"]').value; };
+        l.label = g("label").trim(); l.url = g("url").trim(); l.text = g("text"); l.block = g("block");
+        r.label = l.label; r.value = linkPack(l);
+        save(); renderLinkChips();
+        toastMsg("Сохранено ✓");
+      });
+    });
+  });
+  wrap.querySelectorAll("[data-ldel]").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var id = btn.getAttribute("data-ldel");
+      var r = data.info.find(function(x){ return x.id===id; });
+      if(!confirm('Удалить ссылку «'+(r?r.label:"")+'»?')) return;
+      data.info = data.info.filter(function(x){ return x.id!==id; });
+      if(!linkRows().length && !data.info.some(function(x){ return x.id==="lnk_none"; })) data.info.push({id:"lnk_none", label:"", value:"{}"});
+      save(); renderLinkFields(); renderLinkChips();
+    });
+  });
+}
+document.getElementById("addLinkBtn").addEventListener("click", function(){
+  data.info = data.info.filter(function(x){ return x.id!=="lnk_none"; });
+  data.info.push({id:"lnk_n"+Date.now(), label:"Новая ссылка", value:linkPack({url:"", text:"", block:"el"})});
+  save(); renderLinkFields(); renderLinkChips();
+});
 function renderRefTab(){
+  renderLinkFields();
   renderCategoryChips();
   renderInfoFields();
   renderEventCategoryChips();
@@ -2864,7 +2981,7 @@ function renderRefTab(){
 var LAST_BACKUP_KEY = "utilityTrackerLastBackup_v1";
 var LAST_IMPORT_KEY = "utilityTrackerLastImport_v1";
 var PRE_IMPORT_KEY = "utilityTrackerPreImport_v1";
-var APP_VERSION = "1.68";
+var APP_VERSION = "1.69";
 function fmtDateTime(iso){
   if(!iso) return "—";
   var d = new Date(iso);
